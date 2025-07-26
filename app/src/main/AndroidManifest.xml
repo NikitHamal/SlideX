@@ -1,13 +1,12 @@
 
 <manifest
-	xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.slides.ai">
+	xmlns:android="http://schemas.android.com/apk/res/android">
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 	<application
+		android:name=".SlideApplication"
 		android:allowBackup="true"
 		android:icon="@mipmap/ic_launcher"
 		android:label="@string/app_name"
@@ -18,7 +17,6 @@
 			android:name=".MainActivity"
 			android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
 			android:hardwareAccelerated="true"
-			android:supportsPictureInPicture="true"
 			android:screenOrientation="portrait"
 			android:exported="true">
 			<intent-filter>
@@ -27,9 +25,16 @@
 			</intent-filter>
 		</activity>
 		<activity
-			android:name=".DebugActivity"
+			android:name=".SlideActivity"
+			android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
+			android:hardwareAccelerated="true"
+			android:supportsPictureInPicture="true"
 			android:screenOrientation="portrait"
-			android:theme="@style/AppTheme.DebugActivity" />
+			android:exported="false" />
+		<activity
+			android:name=".SettingsActivity"
+			android:screenOrientation="portrait"
+			android:exported="false" />
 		<provider
 			android:name="androidx.startup.InitializationProvider"
 			android:authorities="com.slides.ai.androidx-startup"
