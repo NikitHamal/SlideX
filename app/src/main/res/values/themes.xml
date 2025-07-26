@@ -51,6 +51,5 @@
 
     <style name="BottomSheetModal" parent="Widget.Material3.BottomSheet.Modal">
         <item name="backgroundTint">@color/md_theme_surface</item>
-        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Large.Top</item>
     </style>
 </resources>
