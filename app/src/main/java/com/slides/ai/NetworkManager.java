@@ -22,8 +22,8 @@ import java.util.concurrent.ExecutorService;
 * NetworkManager handles all API interactions and image loading operations
 */
 public class NetworkManager {
-	private final String API_KEY;
-	private final String GEMINI_API_URL;
+	private final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+	private ApiKeyManager apiKeyManager;
 	private HashMap<String, Bitmap> imageCache;
 	private Handler mainHandler;
 	private Thread networkThread;
@@ -41,10 +41,9 @@ public class NetworkManager {
 		void onImageLoadFailed(String errorMessage);
 	}
 	
-	public NetworkManager(String apiKey, String apiUrl, HashMap<String, Bitmap> imageCache, 
+	public NetworkManager(ApiKeyManager apiKeyManager, HashMap<String, Bitmap> imageCache, 
 	Handler mainHandler, ExecutorService executorService) {
-		this.API_KEY = apiKey;
-		this.GEMINI_API_URL = apiUrl;
+		this.apiKeyManager = apiKeyManager;
 		this.imageCache = imageCache;
 		this.mainHandler = mainHandler;
 		this.executorService = executorService;
@@ -100,8 +99,15 @@ public class NetworkManager {
 					generationConfig.put("maxOutputTokens", 8192);
 					requestBody.put("generationConfig", generationConfig);
 					
+					// Get API key from manager
+					String apiKey = apiKeyManager.getActiveApiKey();
+					if (apiKey == null) {
+						result = "ERROR: No API key available";
+						return;
+					}
+					
 					// Create URL with API key
-					URL url = new URL(GEMINI_API_URL + "?key=" + API_KEY);
+					URL url = new URL(GEMINI_API_URL + "?key=" + apiKey);
 					
 					// Create connection
 					HttpURLConnection connection = (HttpURLConnection) url.openConnection();
