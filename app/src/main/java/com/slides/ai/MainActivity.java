@@ -97,17 +97,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void createNewSlideStack() {
-        String stackId = "stack_" + System.currentTimeMillis();
+        // Simply open the slide editor with a temporary stack
+        // The stack will only be saved when it has actual content
+        String stackId = "temp_" + System.currentTimeMillis();
         String stackName = "New Slide Stack";
-        SlideStack newStack = new SlideStack(stackId, stackName, new ArrayList<>(), System.currentTimeMillis());
+        SlideStack tempStack = new SlideStack(stackId, stackName, new ArrayList<>(), System.currentTimeMillis());
 
-        slideStacks.add(newStack);
-        saveSlideStacks();
-        adapter.notifyItemInserted(slideStacks.size() - 1);
-        updateEmptyState();
-
-        // Open the slide editor for this new stack
-        openSlideEditor(newStack);
+        // Open the slide editor for this temporary stack
+        openSlideEditor(tempStack);
     }
 
     private void saveSlideStacks() {

@@ -61,7 +61,6 @@ CustomizationManager.ImageSelectionCallback {
 	private TextInputEditText userPrompt;
 	private FloatingActionButton icSend;
 	private View downloadImage;
-	private View fullscreenButton;
 	private View importIc;
 	private CustomView slideView;
 
@@ -79,22 +78,31 @@ CustomizationManager.ImageSelectionCallback {
 	private SlideRenderer slideRenderer;
 	private NetworkManager networkManager;
 	private CustomizationManager customizationManager;
+	private ApiKeyManager apiKeyManager;
 
 	private static final int SLIDE_WIDTH = 320;
 	private static final int SLIDE_HEIGHT = 200;
 	private static final int PICK_IMAGE_REQUEST = 1;
 	private SlideElement selectedElement;
+	
+	// Stack information for saving
+	private String stackId;
+	private String stackName;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+		
+		// Get stack information from intent
+		Intent intent = getIntent();
+		stackId = intent.getStringExtra("stack_id");
+		stackName = intent.getStringExtra("stack_name");
 
 		slideContainer = findViewById(R.id.slide);
 		userPrompt = findViewById(R.id.userPrompt);
 		icSend = findViewById(R.id.icSend);
 		downloadImage = findViewById(R.id.downloadImage);
-		fullscreenButton = findViewById(R.id.fullscreenButton);
 		importIc = findViewById(R.id.importIc); // Ensure this ID is in your layout
 
 		mainHandler = new Handler();
@@ -106,7 +114,7 @@ CustomizationManager.ImageSelectionCallback {
 		slideRenderer = new SlideRenderer(this, slideView, imageCache);
 		slideRenderer.setElementSelectionListener(this);
 
-		ApiKeyManager apiKeyManager = new ApiKeyManager(this);
+		apiKeyManager = new ApiKeyManager(this);
 		networkManager = new NetworkManager(apiKeyManager, imageCache, mainHandler, executorService);
 
 		customizationManager = new CustomizationManager(this, slideRenderer);
@@ -114,23 +122,62 @@ CustomizationManager.ImageSelectionCallback {
 
 		icSend.setOnClickListener(v -> {
 			String prompt = userPrompt.getText().toString().trim();
-			if (!prompt.isEmpty()) {
-				sendPromptToGemini(prompt);
-				userPrompt.setText("");
-			} else {
+			
+			// Check if prompt is empty
+			if (prompt.isEmpty()) {
 				showMessage("Please enter a prompt");
+				return;
 			}
+			
+			// Check internet connectivity
+			if (!SketchwareUtil.isConnected(this)) {
+				showMessage("No internet connection available");
+				return;
+			}
+			
+			// Check if API key is set
+			String apiKey = apiKeyManager.getActiveApiKey();
+			if (apiKey == null) {
+				showApiKeyDialog(prompt);
+				return;
+			}
+			
+			// All checks passed, send the prompt
+			sendPromptToGemini(prompt);
+			userPrompt.setText("");
 		});
 
 		downloadImage.setOnClickListener(v -> showDownloadOptionsDialog());
 
-		fullscreenButton.setOnClickListener(v -> toggleFullscreen());
-
 		importIc.setOnClickListener(v -> showJsonInputDialog());
 	}
 
-	private void toggleFullscreen() {
-		showMessage("Fullscreen mode toggled");
+	private void showApiKeyDialog(String pendingPrompt) {
+		LayoutInflater inflater = LayoutInflater.from(this);
+		View dialogView = inflater.inflate(R.layout.dialog_add_api_key, null);
+		
+		TextInputEditText etApiKey = dialogView.findViewById(R.id.keyEdit);
+		
+		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+		builder.setTitle("API Key Required")
+			.setMessage("Please enter your Gemini API key to continue")
+			.setView(dialogView)
+			.setPositiveButton("Save", (dialog, which) -> {
+				String apiKey = etApiKey.getText().toString().trim();
+				if (!apiKey.isEmpty()) {
+					apiKeyManager.addApiKey("Gemini API Key", apiKey);
+					sendPromptToGemini(pendingPrompt);
+					userPrompt.setText("");
+					showMessage("API key saved successfully");
+				} else {
+					showMessage("Please enter a valid API key");
+				}
+			})
+			.setNegativeButton("Cancel", (dialog, which) -> {
+				dialog.dismiss();
+			})
+			.setCancelable(false)
+			.show();
 	}
 
 	private void sendPromptToGemini(String prompt) {
@@ -164,6 +211,9 @@ CustomizationManager.ImageSelectionCallback {
 			}
 
 			showMessage("Slide created successfully!");
+			
+			// Save the stack now that it has content
+			saveSlideStackIfTemporary();
 
 		} catch (JSONException e) {
 			showMessage("Error parsing JSON: " + e.getMessage());
@@ -183,6 +233,53 @@ CustomizationManager.ImageSelectionCallback {
 				showMessage("Failed to load image: " + errorMessage);
 			}
 		});
+	}
+
+	private void saveSlideStackIfTemporary() {
+		// Only save if this is a temporary stack (starts with "temp_")
+		if (stackId != null && stackId.startsWith("temp_")) {
+			try {
+				// Change the ID to a permanent one
+				stackId = "stack_" + System.currentTimeMillis();
+				
+				// Get current slide data
+				JSONObject slideData = slideRenderer.getSlideData();
+				if (slideData != null) {
+					// Create a slide stack with the current slide
+					List<JSONObject> slides = new ArrayList<>();
+					slides.add(slideData);
+					
+					// Save to shared preferences
+					android.content.SharedPreferences sharedPreferences = getSharedPreferences("slide_stacks", MODE_PRIVATE);
+					String stacksJson = sharedPreferences.getString("stacks", "[]");
+					
+					JSONArray stacksArray = new JSONArray(stacksJson);
+					
+					// Create new stack object
+					JSONObject stackObj = new JSONObject();
+					stackObj.put("id", stackId);
+					stackObj.put("name", stackName);
+					stackObj.put("createdAt", System.currentTimeMillis());
+					
+					// Add slides array
+					JSONArray slidesArray = new JSONArray();
+					for (JSONObject slide : slides) {
+						slidesArray.put(slide);
+					}
+					stackObj.put("slides", slidesArray);
+					
+					// Add to stacks array
+					stacksArray.put(stackObj);
+					
+					// Save back to preferences
+					sharedPreferences.edit()
+						.putString("stacks", stacksArray.toString())
+						.apply();
+				}
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	private void saveSlideAsImage(String format, int qualityValue, float scale, boolean transparent) {
