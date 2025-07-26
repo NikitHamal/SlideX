@@ -1,0 +1,164 @@
+<LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	android:background="@color/md_theme_background">
+	<LinearLayout
+		android:id="@+id/top"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:paddingLeft="16dp"
+		android:paddingTop="12dp"
+		android:paddingRight="16dp"
+		android:paddingBottom="12dp"
+		android:background="#FFFFFF"
+		android:gravity="center_vertical"
+		android:orientation="horizontal"
+		android:elevation="8dp">
+		<TextView
+			android:id="@+id/textview1"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:padding="8dp"
+			android:text="@string/app_name"
+			android:textSize="22sp"
+			android:textColor="@color/md_theme_onSurface"
+			android:layout_weight="1" />
+		<ImageView
+			android:id="@+id/importIc"
+			android:layout_width="24dp"
+			android:layout_height="24dp"
+			android:layout_marginRight="16dp"
+			android:src="@drawable/icon_code_round"
+			android:scaleType="fitXY" />
+		<ImageView
+			android:id="@+id/fullscreenButton"
+			android:layout_width="24dp"
+			android:layout_height="24dp"
+			android:layout_marginRight="16dp"
+			android:padding="1dp"
+			android:src="@drawable/icon_zoom_out_map_round"
+			android:scaleType="fitXY"
+			android:background="?attr/selectableItemBackgroundBorderless"
+			android:tint="@color/md_theme_primary" />
+		<ImageView
+			android:id="@+id/downloadImage"
+			android:layout_width="24dp"
+			android:layout_height="24dp"
+			android:padding="1dp"
+			android:src="@drawable/icon_download_round"
+			android:scaleType="fitXY"
+			android:background="?attr/selectableItemBackgroundBorderless"
+			android:tint="@color/md_theme_primary" />
+	</LinearLayout>
+	<LinearLayout
+		android:id="@+id/body"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:padding="16dp"
+		android:gravity="center_horizontal|center_vertical"
+		android:orientation="vertical"
+		android:layout_weight="1">
+		<com.google.android.material.card.MaterialCardView
+			android:id="@+id/cardview1"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal|center_vertical"
+			app:cardCornerRadius="12dp"
+			app:cardElevation="0dp"
+			app:strokeWidth="1dp"
+			app:strokeColor="@color/md_theme_outlineVariant">
+			<com.google.android.material.card.MaterialCardView
+				android:id="@+id/slide"
+				android:layout_width="320dp"
+				android:layout_height="200dp" />
+		</com.google.android.material.card.MaterialCardView>
+		<HorizontalScrollView
+			android:id="@+id/editingToolbar"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="16dp"
+			android:scrollbars="none"
+			android:visibility="gone">
+			<com.google.android.material.chip.ChipGroup
+				android:id="@+id/chip_group1"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:orientation="horizontal">
+				<com.google.android.material.chip.Chip
+					android:id="@+id/btnEditText"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					style="@style/Widget.Material3.Chip.Assist" />
+				<com.google.android.material.chip.Chip
+					android:id="@+id/btnChangeColor"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					style="@style/Widget.Material3.Chip.Assist" />
+				<com.google.android.material.chip.Chip
+					android:id="@+id/btnChangeStyle"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					style="@style/Widget.Material3.Chip.Assist" />
+				<com.google.android.material.chip.Chip
+					android:id="@+id/btnAddElement"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					style="@style/Widget.Material3.Chip.Assist" />
+				<com.google.android.material.chip.Chip
+					android:id="@+id/btnDeleteElement"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					app:chipBackgroundColor="@color/md_theme_errorContainer"
+					style="@style/Widget.Material3.Chip.Assist" />
+			</com.google.android.material.chip.ChipGroup>
+		</HorizontalScrollView>
+	</LinearLayout>
+	<LinearLayout
+		android:id="@+id/bottom"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:padding="16dp"
+		android:background="#FFFFFF"
+		android:orientation="horizontal"
+		android:elevation="8dp">
+		<com.google.android.material.textfield.TextInputLayout
+			android:id="@+id/textinputlayout1"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:layout_marginEnd="8dp"
+			app:boxBackgroundColor="@color/md_theme_surfaceContainerLow"
+			app:boxCornerRadiusBottomEnd="24dp"
+			app:boxCornerRadiusBottomStart="24dp"
+			app:boxCornerRadiusTopEnd="24dp"
+			app:boxCornerRadiusTopStart="24dp"
+			app:boxStrokeWidth="0dp"
+			app:hintEnabled="false"
+			style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
+			<com.google.android.material.textfield.TextInputEditText
+				android:id="@+id/userPrompt"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:padding="12dp"
+				android:textSize="14sp"
+				android:textColor="@color/md_theme_onSurface"
+				android:hint="Enter your prompt"
+				android:textColorHint="#9E9E9E"
+				android:singleLine="true"
+				android:background="@null" />
+		</com.google.android.material.textfield.TextInputLayout>
+		<com.google.android.material.floatingactionbutton.FloatingActionButton
+			android:id="@+id/icSend"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center_vertical"
+			app:fabSize="mini"
+			app:tint="@color/md_theme_onPrimaryContainer"
+			app:backgroundTint="@color/md_theme_primaryContainer"
+			app:elevation="0dp" />
+	</LinearLayout>
+</LinearLayout>

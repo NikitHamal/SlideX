@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="AppTheme" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Customize your theme here -->
+    </style>
+
+    <!-- Material 3 Dialog Style -->
+    <style name="ThemeOverlay.Material3.MaterialAlertDialog.Centered" 
+           parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="buttonBarPositiveButtonStyle">@style/PositiveButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/NegativeButton</item>
+    </style>
+
+    <style name="PositiveButton" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">?attr/colorPrimary</item>
+    </style>
+
+    <style name="NegativeButton" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+</resources>
