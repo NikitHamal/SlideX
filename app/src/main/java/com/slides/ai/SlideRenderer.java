@@ -101,6 +101,10 @@ public class SlideRenderer {
 		slideView.invalidate();
 	}
 	
+	public JSONObject getSlideData() {
+		return slideData;
+	}
+
 	public void setBackgroundColor(int color) {
 		backgroundColor = color;
 	}

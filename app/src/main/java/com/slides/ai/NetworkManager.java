@@ -41,7 +41,7 @@ public class NetworkManager {
 		void onImageLoadFailed(String errorMessage);
 	}
 	
-	public NetworkManager(ApiKeyManager apiKeyManager, HashMap<String, Bitmap> imageCache, 
+	public NetworkManager(ApiKeyManager apiKeyManager, HashMap<String, Bitmap> imageCache,
 	Handler mainHandler, ExecutorService executorService) {
 		this.apiKeyManager = apiKeyManager;
 		this.imageCache = imageCache;
@@ -105,7 +105,7 @@ public class NetworkManager {
 						result = "ERROR: No API key available";
 						return;
 					}
-					
+
 					// Create URL with API key
 					URL url = new URL(GEMINI_API_URL + "?key=" + apiKey);
 					

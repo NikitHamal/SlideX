@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -53,13 +54,13 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
         fabCreate = findViewById(R.id.fabCreate);
         emptyStateView = findViewById(R.id.emptyStateView);
-        
+
         setSupportActionBar(toolbar);
-        
+
         sharedPreferences = getSharedPreferences("slide_stacks", MODE_PRIVATE);
-        
+
         fabCreate.setOnClickListener(v -> createNewSlideStack());
-        
+
         // Setup menu items in toolbar
         toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_settings) {
@@ -68,6 +69,12 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
     }
 
     private void setupRecyclerView() {
@@ -80,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
     private void loadSlideStacks() {
         slideStacks.clear();
         String stacksJson = sharedPreferences.getString("stacks", "[]");
-        
+
         try {
             JSONArray stacksArray = new JSONArray(stacksJson);
             for (int i = 0; i < stacksArray.length(); i++) {
@@ -91,23 +98,20 @@ public class MainActivity extends AppCompatActivity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        
+
         adapter.notifyDataSetChanged();
         updateEmptyState();
     }
 
     private void createNewSlideStack() {
-        String stackId = "stack_" + System.currentTimeMillis();
+        // Simply open the slide editor with a temporary stack
+        // The stack will only be saved when it has actual content
+        String stackId = "temp_" + System.currentTimeMillis();
         String stackName = "New Slide Stack";
-        SlideStack newStack = new SlideStack(stackId, stackName, new ArrayList<>(), System.currentTimeMillis());
-        
-        slideStacks.add(newStack);
-        saveSlideStacks();
-        adapter.notifyItemInserted(slideStacks.size() - 1);
-        updateEmptyState();
-        
-        // Open the slide editor for this new stack
-        openSlideEditor(newStack);
+        SlideStack tempStack = new SlideStack(stackId, stackName, new ArrayList<>(), System.currentTimeMillis());
+
+        // Open the slide editor for this temporary stack
+        openSlideEditor(tempStack);
     }
 
     private void saveSlideStacks() {
@@ -115,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
         for (SlideStack stack : slideStacks) {
             stacksArray.put(stack.toJson());
         }
-        
+
         sharedPreferences.edit()
                 .putString("stacks", stacksArray.toString())
                 .apply();
@@ -196,10 +200,10 @@ public class MainActivity extends AppCompatActivity {
             public void bind(SlideStack stack) {
                 titleText.setText(stack.getName());
                 slideCountText.setText(stack.getSlides().size() + " slides");
-                
+
                 SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
                 lastModifiedText.setText("Modified " + sdf.format(new Date(stack.getLastModified())));
-                
+
                 // TODO: Generate preview image from first slide
                 previewImage.setImageResource(R.drawable.ic_slides_preview);
             }
@@ -225,13 +229,13 @@ public class MainActivity extends AppCompatActivity {
                 obj.put("id", id);
                 obj.put("name", name);
                 obj.put("lastModified", lastModified);
-                
+
                 JSONArray slidesArray = new JSONArray();
                 for (String slide : slides) {
                     slidesArray.put(slide);
                 }
                 obj.put("slides", slidesArray);
-                
+
                 return obj;
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -244,13 +248,13 @@ public class MainActivity extends AppCompatActivity {
                 String id = obj.getString("id");
                 String name = obj.getString("name");
                 long lastModified = obj.getLong("lastModified");
-                
+
                 List<String> slides = new ArrayList<>();
                 JSONArray slidesArray = obj.getJSONArray("slides");
                 for (int i = 0; i < slidesArray.length(); i++) {
                     slides.add(slidesArray.getString(i));
                 }
-                
+
                 return new SlideStack(id, name, slides, lastModified);
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -263,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
         public String getName() { return name; }
         public List<String> getSlides() { return slides; }
         public long getLastModified() { return lastModified; }
-        
+
         // Setters
         public void setName(String name) { this.name = name; }
         public void setLastModified(long lastModified) { this.lastModified = lastModified; }

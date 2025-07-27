@@ -26,6 +26,9 @@
         <item name="colorOnSurfaceVariant">@color/md_theme_onSurfaceVariant</item>
         <item name="colorOutline">@color/md_theme_outline</item>
         <item name="colorOutlineVariant">@color/md_theme_outlineVariant</item>
+        <!-- Universal font family -->
+        <item name="android:fontFamily">@font/reg</item>
+        <item name="fontFamily">@font/reg</item>
     </style>
 
     <!-- Material 3 Dialog Style -->
@@ -51,6 +54,5 @@
 
     <style name="BottomSheetModal" parent="Widget.Material3.BottomSheet.Modal">
         <item name="backgroundTint">@color/md_theme_surface</item>
-        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Large.Top</item>
     </style>
 </resources>

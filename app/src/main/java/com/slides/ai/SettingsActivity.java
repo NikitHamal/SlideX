@@ -54,6 +54,9 @@ public class SettingsActivity extends AppCompatActivity {
         themeCard = findViewById(R.id.themeCard);
         apiKeysCard = findViewById(R.id.apiKeysCard);
         aboutCard = findViewById(R.id.aboutCard);
+        findViewById(R.id.documentationCard).setOnClickListener(v -> {
+            startActivity(new Intent(this, DocumentationActivity.class));
+        });
         themeSpinner = findViewById(R.id.themeSpinner);
         apiKeysCountText = findViewById(R.id.apiKeysCountText);
 
@@ -70,7 +73,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void setupTheme() {
         String[] themeOptions = {"Light", "Dark", "System Default"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_dropdown_item_1line, themeOptions);
         themeSpinner.setAdapter(adapter);
 
@@ -86,7 +89,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void setupApiKeys() {
         updateApiKeysCount();
-        
+
         apiKeysCard.setOnClickListener(v -> showApiKeysBottomSheet());
     }
 
@@ -97,9 +100,9 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void showApiKeysBottomSheet() {
-        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this, 
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this,
                 R.style.ThemeOverlay_Material3_BottomSheetDialog);
-        
+
         View bottomSheetView = LayoutInflater.from(this)
                 .inflate(R.layout.bottom_sheet_api_keys, null);
         bottomSheetDialog.setContentView(bottomSheetView);
@@ -208,7 +211,7 @@ public class SettingsActivity extends AppCompatActivity {
             public void bind(ApiKeyManager.ApiKey key) {
                 labelText.setText(key.getLabel());
                 keyText.setText(key.getDisplayKey());
-                
+
                 SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
                 dateText.setText("Added " + sdf.format(new Date(key.getCreatedAt())));
 
