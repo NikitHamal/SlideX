@@ -35,6 +35,14 @@
 			android:name=".SettingsActivity"
 			android:screenOrientation="portrait"
 			android:exported="false" />
+		<activity
+			android:name=".DocumentationActivity"
+			android:screenOrientation="portrait"
+			android:exported="false" />
+		<activity
+			android:name=".DebugActivity"
+			android:screenOrientation="portrait"
+			android:exported="false" />
 		<provider
 			android:name="androidx.startup.InitializationProvider"
 			android:authorities="com.slides.ai.androidx-startup"

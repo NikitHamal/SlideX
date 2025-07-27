@@ -91,7 +91,9 @@ public class SettingsActivity extends AppCompatActivity {
     private void setupApiKeys() {
         updateApiKeysCount();
 
-        apiKeysCard.setOnClickListener(v -> showApiKeysBottomSheet());
+        apiKeysCard.setOnClickListener(v -> {
+            startActivity(new Intent(this, ApiKeyActivity.class));
+        });
     }
 
     private void updateApiKeysCount() {
@@ -100,59 +102,6 @@ public class SettingsActivity extends AppCompatActivity {
         apiKeysCountText.setText(countText);
     }
 
-    private void showApiKeysBottomSheet() {
-        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this,
-                R.style.ThemeOverlay_Material3_BottomSheetDialog);
-
-        View bottomSheetView = LayoutInflater.from(this)
-                .inflate(R.layout.bottom_sheet_api_keys, null);
-        bottomSheetDialog.setContentView(bottomSheetView);
-
-        RecyclerView recyclerView = bottomSheetView.findViewById(R.id.recyclerView);
-        FloatingActionButton fabAdd = bottomSheetView.findViewById(R.id.fabAdd);
-        TextView titleText = bottomSheetView.findViewById(R.id.titleText);
-
-        titleText.setText("API Keys");
-
-        ApiKeyAdapter adapter = new ApiKeyAdapter(apiKeyManager.getApiKeyObjects());
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(adapter);
-
-        fabAdd.setOnClickListener(v -> {
-            bottomSheetDialog.dismiss();
-            showAddApiKeyDialog();
-        });
-
-        bottomSheetDialog.show();
-    }
-
-    private void showAddApiKeyDialog() {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
-        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_api_key, null);
-
-        TextInputLayout labelLayout = dialogView.findViewById(R.id.labelLayout);
-        TextInputLayout keyLayout = dialogView.findViewById(R.id.keyLayout);
-        TextInputEditText labelEdit = dialogView.findViewById(R.id.labelEdit);
-        TextInputEditText keyEdit = dialogView.findViewById(R.id.keyEdit);
-
-        builder.setTitle("Add API Key")
-                .setView(dialogView)
-                .setPositiveButton("Add", (dialog, which) -> {
-                    String label = labelEdit.getText().toString().trim();
-                    String key = keyEdit.getText().toString().trim();
-
-                    if (key.isEmpty()) {
-                        Toast.makeText(this, "API key cannot be empty", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    apiKeyManager.addApiKey(key, label);
-                    updateApiKeysCount();
-                    Toast.makeText(this, "API key added successfully", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
 
     private void setupAbout() {
         aboutCard.setOnClickListener(v -> showAboutDialog());

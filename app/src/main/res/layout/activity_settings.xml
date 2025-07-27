@@ -54,13 +54,6 @@
                         android:layout_marginBottom="16dp"
                         android:orientation="horizontal">
 
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center_vertical"
-                            android:layout_marginEnd="16dp"
-                            android:src="@drawable/ic_palette"
-                            android:tint="@color/md_theme_primary" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -124,13 +117,6 @@
                     android:orientation="horizontal"
                     android:padding="20dp">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center_vertical"
-                        android:layout_marginEnd="16dp"
-                        android:src="@drawable/ic_code"
-                        android:tint="@color/md_theme_primary" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -155,12 +141,6 @@
 
                     </LinearLayout>
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center_vertical"
-                        android:src="@drawable/ic_chevron_right"
-                        android:tint="@color/md_theme_onSurfaceVariant" />
 
                 </LinearLayout>
 
@@ -185,13 +165,6 @@
                     android:orientation="horizontal"
                     android:padding="20dp">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center_vertical"
-                        android:layout_marginEnd="16dp"
-                        android:src="@drawable/ic_key"
-                        android:tint="@color/md_theme_primary" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -246,13 +219,6 @@
                     android:orientation="horizontal"
                     android:padding="20dp">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center_vertical"
-                        android:layout_marginEnd="16dp"
-                        android:src="@drawable/ic_info"
-                        android:tint="@color/md_theme_primary" />
 
                     <LinearLayout
                         android:layout_width="0dp"

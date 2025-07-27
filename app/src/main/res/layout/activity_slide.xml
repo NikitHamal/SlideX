@@ -51,15 +51,6 @@
         android:layout_marginTop="72dp">
 
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/downloadImage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:backgroundTint="@color/md_theme_tertiaryContainer"
-            app:fabSize="mini"
-            app:srcCompat="@drawable/icon_download_round"
-            app:tint="@color/md_theme_onTertiaryContainer"
-            app:elevation="0dp" />
 
     </LinearLayout>
 
