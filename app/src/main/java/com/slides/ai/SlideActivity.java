@@ -132,33 +132,6 @@ CustomizationManager.ImageSelectionCallback {
 		customizationManager.setImageSelectionCallback(this);
 	}
 
-	private void showApiKeyDialog(String pendingPrompt) {
-		LayoutInflater inflater = LayoutInflater.from(this);
-		View dialogView = inflater.inflate(R.layout.dialog_add_api_key, null);
-
-		TextInputEditText etApiKey = dialogView.findViewById(R.id.keyEdit);
-
-		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
-		builder.setTitle("API Key Required")
-			.setMessage("Please enter your Gemini API key to continue")
-			.setView(dialogView)
-			.setPositiveButton("Save", (dialog, which) -> {
-				String apiKey = etApiKey.getText().toString().trim();
-				if (!apiKey.isEmpty()) {
-					apiKeyManager.addApiKey("Gemini API Key", apiKey);
-					sendPromptToGemini(pendingPrompt);
-					userPrompt.setText("");
-					showMessage("API key saved successfully");
-				} else {
-					showMessage("Please enter a valid API key");
-				}
-			})
-			.setNegativeButton("Cancel", (dialog, which) -> {
-				dialog.dismiss();
-			})
-			.setCancelable(false)
-			.show();
-	}
 
 
 	private void saveSlideStackIfTemporary() {
