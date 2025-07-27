@@ -141,7 +141,10 @@
 			android:layout_weight="1"
 			android:layout_marginEnd="12dp"
 			app:boxBackgroundColor="@color/md_theme_surfaceContainerLow"
-			app:boxCornerRadius="24dp"
+			app:boxCornerRadiusTopStart="24dp"
+			app:boxCornerRadiusTopEnd="24dp"
+			app:boxCornerRadiusBottomStart="24dp"
+			app:boxCornerRadiusBottomEnd="24dp"
 			app:boxStrokeWidth="0dp"
 			app:hintEnabled="false"
 			style="@style/Widget.Material3.TextInputLayout.FilledBox.Dense">
