@@ -18,25 +18,38 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <ImageView
-            android:id="@+id/previewImage"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:layout_marginBottom="12dp"
-            android:background="@color/md_theme_surfaceVariant"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_slides_preview" />
+            android:layout_height="90dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/md_theme_outlineVariant">
+
+            <ImageView
+                android:id="@+id/previewImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/md_theme_surfaceContainerHigh"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_slides_preview"
+                android:tint="@color/md_theme_onSurfaceVariant"
+                android:alpha="0.7" />
+
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/titleText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
+            android:layout_marginBottom="6dp"
             android:ellipsize="end"
             android:maxLines="2"
             android:text="Slide Stack Title"
             android:textColor="@color/md_theme_onSurface"
             android:textSize="16sp"
+            android:fontFamily="@font/sem"
             android:textStyle="bold" />
 
         <TextView
@@ -46,7 +59,8 @@
             android:layout_marginBottom="4dp"
             android:text="0 slides"
             android:textColor="@color/md_theme_onSurfaceVariant"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:fontFamily="@font/reg" />
 
         <TextView
             android:id="@+id/lastModifiedText"
@@ -54,7 +68,8 @@
             android:layout_height="wrap_content"
             android:text="Modified today"
             android:textColor="@color/md_theme_onSurfaceVariant"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            android:fontFamily="@font/reg" />
 
     </LinearLayout>
 
