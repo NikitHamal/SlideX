@@ -422,20 +422,21 @@ public class SlideRenderer {
 		// Draw background
 		canvas.drawColor(backgroundColor);
 		
+		float canvasWidth = canvas.getWidth();
+		float canvasHeight = canvas.getHeight();
+		
 		// Draw all elements
 		for (SlideElement element : elements) {
-			element.draw(canvas);
+			element.draw(canvas, canvasWidth, canvasHeight);
 		}
 		
 		// Draw selection overlay for selected element
 		if (selectedElement != null) {
-			// Modern selection with shadow and glow effect
-			RectF elementRect = new RectF(
-				selectedElement.x,
-				selectedElement.y,
-				selectedElement.x + selectedElement.width,
-				selectedElement.y + selectedElement.height
-			);
+			float xPx = selectedElement.getXPx(canvasWidth);
+			float yPx = selectedElement.getYPx(canvasHeight);
+			float wPx = selectedElement.getWidthPx(canvasWidth);
+			float hPx = selectedElement.getHeightPx(canvasHeight);
+			RectF elementRect = new RectF(xPx, yPx, xPx + wPx, yPx + hPx);
 			
 			// Draw shadow/glow effect around selected element
 			Paint shadowPaint = new Paint();

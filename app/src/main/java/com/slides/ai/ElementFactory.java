@@ -39,6 +39,7 @@ public class ElementFactory {
 				Log.d("ElementFactory", "Creating element type: " + type + " at position (" + 
 					  element.optInt("x", 0) + "," + element.optInt("y", 0) + ")");
 				
+				// All x, y, width, height should be percentages (0.0–1.0)
 				switch (type.toLowerCase()) {
 					case "text":
 						elements.add(new TextElement(element, context));
