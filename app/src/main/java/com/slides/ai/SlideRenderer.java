@@ -585,8 +585,10 @@ public class SlideRenderer {
 	 * Draw modern, Material Design-inspired resize handles
 	 */
 	private void drawModernResizeHandles(Canvas canvas, RectF elementRect) {
-		float handleSize = dpToPx(10) / scaleFactor;
-		float handleStroke = dpToPx(2) / scaleFactor;
+		float handleSize = dpToPx(7) / scaleFactor; // smaller
+		float handleStroke = dpToPx(1.5f) / scaleFactor;
+		int handleColor = ContextCompat.getColor(context, R.color.md_theme_primary); // Material 3 primary
+		int handleBgColor = ContextCompat.getColor(context, R.color.md_theme_surface);
 		
 		// Handle positions: corners and mid-points for better control
 		float[][] handlePositions = {
@@ -614,14 +616,14 @@ public class SlideRenderer {
 			
 			// Draw handle background
 			Paint handleBgPaint = new Paint();
-			handleBgPaint.setColor(Color.WHITE);
+			handleBgPaint.setColor(handleBgColor);
 			handleBgPaint.setStyle(Paint.Style.FILL);
 			handleBgPaint.setAntiAlias(true);
 			canvas.drawCircle(x, y, handleSize / 2 + handleStroke, handleBgPaint);
 			
 			// Draw handle border  
 			Paint handleBorderPaint = new Paint();
-			handleBorderPaint.setColor(Color.parseColor("#2196F3"));
+			handleBorderPaint.setColor(handleColor);
 			handleBorderPaint.setStyle(Paint.Style.STROKE);
 			handleBorderPaint.setStrokeWidth(handleStroke);
 			handleBorderPaint.setAntiAlias(true);
@@ -732,17 +734,11 @@ public class SlideRenderer {
 	private void drawModernAlignmentGuides(Canvas canvas) {
 		// Create guide paint with modern styling
 		Paint guidePaint = new Paint();
-		guidePaint.setColor(Color.parseColor("#FF4081")); // Material Pink for contrast
-		guidePaint.setStrokeWidth(dpToPx(1.5f) / scaleFactor);
+		guidePaint.setColor(ContextCompat.getColor(context, R.color.md_theme_secondary)); // Material 3 secondary
+		guidePaint.setStrokeWidth(dpToPx(1) / scaleFactor);
 		guidePaint.setStyle(Paint.Style.STROKE);
 		guidePaint.setAntiAlias(true);
-		
-		// Create animation effect for guides
-		long currentTime = System.currentTimeMillis();
-		float phase = (currentTime % 1000) / 1000f * dpToPx(8) / scaleFactor;
-		guidePaint.setPathEffect(new DashPathEffect(new float[] {
-			dpToPx(6) / scaleFactor, dpToPx(4) / scaleFactor
-		}, phase));
+		guidePaint.setPathEffect(new DashPathEffect(new float[] {dpToPx(4) / scaleFactor, dpToPx(3) / scaleFactor}, 0));
 		
 		// Draw horizontal guides with fade effect at edges
 		for (Float y : horizontalGuides) {

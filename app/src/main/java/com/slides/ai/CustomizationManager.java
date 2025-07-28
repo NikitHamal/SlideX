@@ -94,6 +94,15 @@ public class CustomizationManager {
 			setupIconCustomization(dialogView, (IconElement) element);
 		}
 		
+		if (element != null) {
+			setupPositionSizeSliders(dialogView, element);
+			if (element instanceof ShapeElement) {
+				setupOpacitySlider(dialogView, (ShapeElement) element);
+				setupBorderControls(dialogView, (ShapeElement) element);
+			}
+			// Add z-order controls if needed
+		}
+		
 		return dialogView;
 	}
 	
@@ -437,6 +446,37 @@ public class CustomizationManager {
 		}
 	}
 	
+	private void setupPositionSizeSliders(View dialogView, SlideElement element) {
+		Slider xSlider = dialogView.findViewById(R.id.slider_x);
+		Slider ySlider = dialogView.findViewById(R.id.slider_y);
+		Slider widthSlider = dialogView.findViewById(R.id.slider_width);
+		Slider heightSlider = dialogView.findViewById(R.id.slider_height);
+		xSlider.setValue(element.x);
+		ySlider.setValue(element.y);
+		widthSlider.setValue(element.width);
+		heightSlider.setValue(element.height);
+		xSlider.addOnChangeListener((slider, value, fromUser) -> { element.x = value; slideRenderer.slideView.invalidate(); });
+		ySlider.addOnChangeListener((slider, value, fromUser) -> { element.y = value; slideRenderer.slideView.invalidate(); });
+		widthSlider.addOnChangeListener((slider, value, fromUser) -> { element.width = value; slideRenderer.slideView.invalidate(); });
+		heightSlider.addOnChangeListener((slider, value, fromUser) -> { element.height = value; slideRenderer.slideView.invalidate(); });
+	}
+	private void setupOpacitySlider(View dialogView, ShapeElement shapeElement) {
+		Slider opacitySlider = dialogView.findViewById(R.id.slider_opacity);
+		opacitySlider.setValue(shapeElement.opacity);
+		opacitySlider.addOnChangeListener((slider, value, fromUser) -> {
+			shapeElement.opacity = value;
+			slideRenderer.slideView.invalidate();
+		});
+	}
+	private void setupBorderControls(View dialogView, ShapeElement shapeElement) {
+		Slider borderWidthSlider = dialogView.findViewById(R.id.slider_border_width);
+		borderWidthSlider.setValue(shapeElement.strokeWidth);
+		borderWidthSlider.addOnChangeListener((slider, value, fromUser) -> {
+			shapeElement.strokeWidth = value;
+			slideRenderer.slideView.invalidate();
+		});
+		// Add color picker for border color if needed
+	}
 	
 	public void showColorPickerDialog(final ColorSelectedListener listener) {
 		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
