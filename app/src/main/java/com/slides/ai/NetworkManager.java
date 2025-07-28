@@ -100,7 +100,7 @@ public class NetworkManager {
 					requestBody.put("generationConfig", generationConfig);
 					
 					// Get API key from manager
-					String apiKey = apiKeyManager.getActiveApiKey();
+					String apiKey = apiKeyManager.getApiKeyForModel("Gemini");
 					if (apiKey == null) {
 						result = "ERROR: No API key available";
 						return;
@@ -185,6 +185,11 @@ public class NetworkManager {
 		});
 		
 		networkThread.start();
+	}
+
+	// Qwen API integration stub for future use
+	public void sendPromptToQwen(String prompt, String model, String chatId, String parentId, final ApiResponseCallback callback) {
+		// TODO: Implement Qwen API call with hardcoded auth and context management
 	}
 	
 	private String extractJsonFromResponse(String response) {

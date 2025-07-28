@@ -180,8 +180,26 @@ public class ApiKeyManager {
     }
 
     public String getActiveApiKey() {
-        List<String> keys = getApiKeys();
-        return keys.isEmpty() ? null : keys.get(0);
+        // Default: return first Gemini key if available, else first key
+        List<ApiKey> keys = getApiKeyObjects();
+        for (ApiKey key : keys) {
+            if (key.getLabel().toLowerCase().contains("gemini") || key.getKey().toLowerCase().contains("AIza")) {
+                return key.getKey();
+            }
+        }
+        return keys.isEmpty() ? null : keys.get(0).getKey();
+    }
+
+    public String getApiKeyForModel(String model) {
+        List<ApiKey> keys = getApiKeyObjects();
+        String modelLower = model.toLowerCase();
+        for (ApiKey key : keys) {
+            if (modelLower.contains("gemini") && (key.getLabel().toLowerCase().contains("gemini") || key.getKey().toLowerCase().contains("AIza"))) {
+                return key.getKey();
+            }
+            // Add more model-specific logic here if needed
+        }
+        return keys.isEmpty() ? null : keys.get(0).getKey();
     }
 
     public static class ApiKey {
