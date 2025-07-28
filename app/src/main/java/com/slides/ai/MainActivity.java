@@ -93,7 +93,9 @@ public class MainActivity extends AppCompatActivity {
             for (int i = 0; i < stacksArray.length(); i++) {
                 JSONObject stackObj = stacksArray.getJSONObject(i);
                 SlideStack stack = SlideStack.fromJson(stackObj);
-                slideStacks.add(stack);
+                if (stack != null) {
+                    slideStacks.add(stack);
+                }
             }
         } catch (JSONException e) {
             e.printStackTrace();

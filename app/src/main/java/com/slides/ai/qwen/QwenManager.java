@@ -39,7 +39,7 @@ public class QwenManager {
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("Authorization", "Bearer " + "YOUR_HARDCODED_TOKEN"); // TODO: Replace with actual token
+                connection.setRequestProperty("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhiYjQ1NjVmLTk3NjUtNDQwNi04OWQ5LTI3NmExMTIxMjBkNiIsImxhc3RfcGFzc3dvcmRfY2hhbmdlIjoxNzUwNjYwODczLCJleHAiOjE3NTU4NDg1NDh9.pb0IybY9tQkriqMUOos72FKtZM3G4p1_aDzwqqh5zX4");
                 connection.setDoOutput(true);
 
                 List<String> models = new ArrayList<>();
@@ -68,7 +68,7 @@ public class QwenManager {
         });
     }
 
-    public void getCompletion(String chatId, String prompt, QwenCallback<String> callback) {
+    public void getCompletion(String chatId, String parentId, String prompt, String model, QwenCallback<String> callback) {
         executorService.execute(() -> {
             try {
                 URL url = new URL(COMPLETION_URL + chatId);
@@ -83,11 +83,26 @@ public class QwenManager {
                 request.incremental_output = true;
                 request.chat_id = chatId;
                 request.chat_mode = "normal";
-                request.model = "qwen3-235b-a22b";
+                request.model = model;
+                request.parent_id = parentId;
                 request.messages = new ArrayList<>();
+
                 QwenCompletionRequest.Message message = new QwenCompletionRequest.Message();
                 message.role = "user";
                 message.content = prompt;
+                message.timestamp = System.currentTimeMillis();
+                message.chat_type = "t2t";
+                message.sub_chat_type = "t2t";
+                message.user_action = "chat";
+                message.feature_config = new QwenCompletionRequest.FeatureConfig();
+                message.feature_config.thinking_enabled = false;
+                message.feature_config.output_schema = "phase";
+                message.extra = new QwenCompletionRequest.Extra();
+                message.extra.meta = new QwenCompletionRequest.Meta();
+                message.extra.meta.subChatType = "t2t";
+                message.parent_id = parentId;
+
+
                 request.messages.add(message);
                 request.timestamp = System.currentTimeMillis();
 
@@ -102,17 +117,32 @@ public class QwenManager {
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                     String line;
-                    StringBuilder response = new StringBuilder();
+                    StringBuilder fullResponse = new StringBuilder();
                     while ((line = reader.readLine()) != null) {
                         if (line.startsWith("data:")) {
                             String json = line.substring(5).trim();
-                            response.append(json);
+                            if (!json.isEmpty()) {
+                                QwenCompletionResponse response = gson.fromJson(json, QwenCompletionResponse.class);
+                                if (response != null && response.choices != null && !response.choices.isEmpty()) {
+                                    QwenCompletionResponse.Delta delta = response.choices.get(0).delta;
+                                    if (delta != null && delta.content != null) {
+                                        fullResponse.append(delta.content);
+                                    }
+                                }
+                            }
                         }
                     }
-                    mainHandler.post(() -> callback.onSuccess(response.toString()));
+                    mainHandler.post(() -> callback.onSuccess(fullResponse.toString()));
                     reader.close();
                 } else {
-                    mainHandler.post(() -> callback.onError("Error: " + responseCode));
+                    BufferedReader errorReader = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+                    StringBuilder errorResponse = new StringBuilder();
+                    String errorLine;
+                    while ((errorLine = errorReader.readLine()) != null) {
+                        errorResponse.append(errorLine);
+                    }
+                    errorReader.close();
+                    mainHandler.post(() -> callback.onError("Error: " + responseCode + " " + errorResponse.toString()));
                 }
                 connection.disconnect();
             } catch (Exception e) {

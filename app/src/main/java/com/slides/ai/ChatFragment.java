@@ -28,8 +28,10 @@ public class ChatFragment extends Fragment {
     private EditText chatInput;
     private ImageButton sendButton;
     private Button modelSelectorButton;
-    private String selectedModel = "Gemini";
+    private String selectedModel = "gemini-2.0-flash";
     private QwenManager qwenManager;
+    private String qwenChatId;
+    private String qwenParentId;
     
     private ChatInteractionListener chatInteractionListener;
 
@@ -88,38 +90,50 @@ public class ChatFragment extends Fragment {
         // Show typing indicator
         addAiMessage("Creating your slide...");
         
-        if (selectedModel.equals("Qwen")) {
-            qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
-                @Override
-                public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
-                    if (response.success) {
-                        qwenManager.getCompletion(response.data.id, message, new QwenManager.QwenCallback<String>() {
-                            @Override
-                            public void onSuccess(String completion) {
-                                addAiResponse(completion);
-                            }
-
-                            @Override
-                            public void onError(String error) {
-                                addAiResponse("Error: " + error);
-                            }
-                        });
-                    } else {
-                        addAiResponse("Error creating new chat.");
+        if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq")) {
+            if (qwenChatId == null) {
+                qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
+                    @Override
+                    public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
+                        if (response.success) {
+                            qwenChatId = response.data.id;
+                            qwenParentId = null; // First message has no parent
+                            sendQwenMessage(message);
+                        } else {
+                            addAiResponse("Error creating new Qwen chat.");
+                        }
                     }
-                }
 
-                @Override
-                public void onError(String error) {
-                    addAiResponse("Error: " + error);
-                }
-            });
+                    @Override
+                    public void onError(String error) {
+                        addAiResponse("Error: " + error);
+                    }
+                });
+            } else {
+                sendQwenMessage(message);
+            }
         } else {
             // Send to parent activity for processing
             if (chatInteractionListener != null) {
                 chatInteractionListener.onChatPromptSent(message);
             }
         }
+    }
+
+    private void sendQwenMessage(String message) {
+        qwenManager.getCompletion(qwenChatId, qwenParentId, message, selectedModel, new QwenManager.QwenCallback<String>() {
+            @Override
+            public void onSuccess(String completion) {
+                addAiResponse(completion);
+                // The response should contain the new parentId, but for now we'll just leave it null
+                // In a real implementation, we would parse the response to get the new parentId
+            }
+
+            @Override
+            public void onError(String error) {
+                addAiResponse("Error: " + error);
+            }
+        });
     }
 
     private void addUserMessage(String message) {
@@ -148,8 +162,31 @@ public class ChatFragment extends Fragment {
     }
 
     private void showModelSelectionDialog() {
-        final String[] models = {"Gemini", "Qwen"};
-        int checkedItem = selectedModel.equals("Qwen") ? 1 : 0;
+        final String[] models = {
+            "gemini-2.0-flash",
+            "qwen3-coder-plus",
+            "qwen3-235b-a22b",
+            "qwen3-30b-a3b",
+            "qwen3-32b",
+            "qwen-max-latest",
+            "qwen-plus-2025-01-25",
+            "qwq-32b",
+            "qwen-turbo-2025-02-11",
+            "qwen2.5-omni-7b",
+            "qvq-72b-preview-0310",
+            "qwen2.5-vl-32b-instruct",
+            "qwen2.5-14b-instruct-1m",
+            "qwen2.5-coder-32b-instruct",
+            "qwen2.5-72b-instruct"
+        };
+        int checkedItem = -1;
+        for (int i = 0; i < models.length; i++) {
+            if (models[i].equals(selectedModel)) {
+                checkedItem = i;
+                break;
+            }
+        }
+
 
         new MaterialAlertDialogBuilder(getContext())
                 .setTitle("Select Model")

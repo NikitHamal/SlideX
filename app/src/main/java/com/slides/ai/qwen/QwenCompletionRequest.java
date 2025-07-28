@@ -26,6 +26,7 @@ public class QwenCompletionRequest {
         public FeatureConfig feature_config;
         public Extra extra;
         public String sub_chat_type;
+        public String parent_id;
     }
 
     public static class File {

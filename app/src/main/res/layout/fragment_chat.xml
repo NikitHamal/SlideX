@@ -8,55 +8,64 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/chat_recycler_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@+id/input_layout"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:clipToPadding="false"
         android:padding="8dp" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/model_selector_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/input_layout"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="8dp"
-        android:text="Gemini"
-        android:textSize="12sp"
-        app:cornerRadius="30dp" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/dividerHorizontal" />
 
     <LinearLayout
-        android:id="@+id/input_layout"
+        android:id="@+id/bottom_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="@color/md_theme_surface"
-        android:elevation="0dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="12dp">
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:background="@color/md_theme_surface">
 
-        <EditText
-            android:id="@+id/chat_input"
-            android:layout_width="0dp"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/model_selector_button"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@android:color/transparent"
-            android:hint="Describe your slide..."
-            android:inputType="textCapSentences|textMultiLine"
-            android:maxLines="5"
-            android:padding="12dp"
-            android:textSize="14sp"
-            android:textColorHint="@color/md_theme_onSurfaceVariant"
-            android:textColor="@color/md_theme_onSurface" />
+            android:layout_gravity="start"
+            android:text="Gemini"
+            android:textSize="12sp"
+            app:cornerRadius="16dp" />
 
-        <ImageButton
-            android:id="@+id/send_button"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_send"
-            app:tint="?attr/colorPrimary" />
+        <LinearLayout
+            android:id="@+id/input_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
+            <EditText
+                android:id="@+id/chat_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:hint="Describe your slide..."
+                android:inputType="textCapSentences|textMultiLine"
+                android:maxLines="5"
+                android:padding="12dp"
+                android:textSize="14sp"
+                android:textColorHint="@color/md_theme_onSurfaceVariant"
+                android:textColor="@color/md_theme_onSurface" />
+
+            <ImageButton
+                android:id="@+id/send_button"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_send"
+                app:tint="?attr/colorPrimary" />
+
+        </LinearLayout>
     </LinearLayout>
 
 </RelativeLayout>
