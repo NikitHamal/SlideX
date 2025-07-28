@@ -37,17 +37,22 @@ public class IconElement extends SlideElement {
 	}
 	
 	@Override
-	public void draw(Canvas canvas) {
+	public void draw(Canvas canvas, float canvasWidth, float canvasHeight) {
+		float xPx = getXPx(canvasWidth);
+		float yPx = getYPx(canvasHeight);
+		float wPx = getWidthPx(canvasWidth);
+		float hPx = getHeightPx(canvasHeight);
 		canvas.save();
-		canvas.translate(x, y);
+		canvas.translate(xPx, yPx);
 		
 		// Get icon character from Material Icons font
 		String iconChar = getIconChar(iconName);
 		
 		// Center the icon
-		float xPos = width / 2f;
-		float yPos = (height / 2f) - ((iconPaint.descent() + iconPaint.ascent()) / 2f);
+		float xPos = wPx / 2f;
+		float yPos = (hPx / 2f) - ((iconPaint.descent() + iconPaint.ascent()) / 2f);
 		
+		iconPaint.setTextSize(Math.min(wPx, hPx));
 		canvas.drawText(iconChar, xPos, yPos, iconPaint);
 		canvas.restore();
 	}

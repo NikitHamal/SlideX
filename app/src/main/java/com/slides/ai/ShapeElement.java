@@ -149,18 +149,56 @@ public class ShapeElement extends SlideElement {
 	}
 	
 	@Override
-	public void draw(Canvas canvas) {
+	public void draw(Canvas canvas, float canvasWidth, float canvasHeight) {
+		float xPx = getXPx(canvasWidth);
+		float yPx = getYPx(canvasHeight);
+		float wPx = getWidthPx(canvasWidth);
+		float hPx = getHeightPx(canvasHeight);
 		canvas.save();
-		canvas.translate(x, y);
-		
-		// Draw fill
+		canvas.translate(xPx, yPx);
+		// Recreate shape path if needed
+		createShapePath(wPx, hPx);
 		canvas.drawPath(shapePath, fillPaint);
-		
-		// Draw stroke if stroke width > 0
 		if (strokeWidth > 0) {
 			canvas.drawPath(shapePath, strokePaint);
 		}
-		
 		canvas.restore();
+	}
+
+	public void createShapePath(float wPx, float hPx) {
+		shapePath = new Path();
+		switch (shapeType.toLowerCase()) {
+			case "rectangle":
+				if (cornerRadius > 0) {
+					RectF rect = new RectF(0, 0, wPx, hPx);
+					shapePath.addRoundRect(rect, cornerRadius, cornerRadius, Path.Direction.CW);
+				} else {
+					shapePath.addRect(0, 0, wPx, hPx, Path.Direction.CW);
+				}
+				break;
+			case "oval":
+				RectF ovalRect = new RectF(0, 0, wPx, hPx);
+				shapePath.addOval(ovalRect, Path.Direction.CW);
+				break;
+			case "line":
+				shapePath.moveTo(0, 0);
+				shapePath.lineTo(wPx, hPx);
+				break;
+			case "triangle":
+				shapePath.moveTo(wPx / 2, 0);
+				shapePath.lineTo(wPx, hPx);
+				shapePath.lineTo(0, hPx);
+				shapePath.close();
+				break;
+			case "star":
+				// ... implement star with wPx, hPx ...
+				break;
+			case "hexagon":
+				// ... implement hexagon with wPx, hPx ...
+				break;
+			default:
+				shapePath.addRect(0, 0, wPx, hPx, Path.Direction.CW);
+				break;
+		}
 	}
 }

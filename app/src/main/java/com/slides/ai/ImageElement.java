@@ -69,45 +69,39 @@ public class ImageElement extends SlideElement {
 	}
 	
 	@Override
-	public void draw(Canvas canvas) {
+	public void draw(Canvas canvas, float canvasWidth, float canvasHeight) {
+		float xPx = getXPx(canvasWidth);
+		float yPx = getYPx(canvasHeight);
+		float wPx = getWidthPx(canvasWidth);
+		float hPx = getHeightPx(canvasHeight);
 		canvas.save();
-		canvas.translate(x, y);
-
-		// Clip to rounded rectangle if corner radius > 0
+		canvas.translate(xPx, yPx);
 		if (cornerRadius > 0) {
+			clipPath = new Path();
+			RectF rect = new RectF(0, 0, wPx, hPx);
+			clipPath.addRoundRect(rect, cornerRadius, cornerRadius, Path.Direction.CW);
 			canvas.clipPath(clipPath);
 		}
-
-		// Draw placeholder background
-		canvas.drawRect(0, 0, width, height, paint);
-
-        String imageUrl = (customImageKey != null) ? customImageKey : url;
-
+		canvas.drawRect(0, 0, wPx, hPx, paint);
+		String imageUrl = (customImageKey != null) ? customImageKey : url;
+		// Glide async loading is not ideal for draw, but keep for now
 		Glide.with(context)
 			.asBitmap()
 			.load(imageUrl)
 			.into(new CustomTarget<Bitmap>() {
 				@Override
 				public void onResourceReady(@NonNull Bitmap bitmap, @Nullable Transition<? super Bitmap> transition) {
-					// Scale bitmap to fit element dimensions while maintaining aspect ratio
-					float scale = Math.min((float) width / bitmap.getWidth(), (float) height / bitmap.getHeight());
+					float scale = Math.min(wPx / bitmap.getWidth(), hPx / bitmap.getHeight());
 					int scaledWidth = (int) (bitmap.getWidth() * scale);
 					int scaledHeight = (int) (bitmap.getHeight() * scale);
-
-					// Center the image
-					int left = (width - scaledWidth) / 2;
-					int top = (height - scaledHeight) / 2;
-
+					int left = (int) ((wPx - scaledWidth) / 2);
+					int top = (int) ((hPx - scaledHeight) / 2);
 					RectF destRect = new RectF(left, top, left + scaledWidth, top + scaledHeight);
 					canvas.drawBitmap(bitmap, null, destRect, null);
 				}
-
 				@Override
-				public void onLoadCleared(@Nullable android.graphics.drawable.Drawable placeholder) {
-					// Do nothing
-				}
+				public void onLoadCleared(@Nullable android.graphics.drawable.Drawable placeholder) {}
 			});
-
 		canvas.restore();
 	}
 }

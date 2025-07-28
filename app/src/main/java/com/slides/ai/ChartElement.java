@@ -56,47 +56,43 @@ public class ChartElement extends SlideElement {
 	}
 	
 	@Override
-	public void draw(Canvas canvas) {
+	public void draw(Canvas canvas, float canvasWidth, float canvasHeight) {
+		float xPx = getXPx(canvasWidth);
+		float yPx = getYPx(canvasHeight);
+		float wPx = getWidthPx(canvasWidth);
+		float hPx = getHeightPx(canvasHeight);
 		canvas.save();
-		canvas.translate(x, y);
-		
+		canvas.translate(xPx, yPx);
 		switch (chartType) {
 			case "bar":
-			drawBarChart(canvas);
-			break;
+				drawBarChart(canvas, wPx, hPx);
+				break;
 			case "pie":
-			drawPieChart(canvas);
-			break;
+				drawPieChart(canvas, wPx, hPx);
+				break;
 		}
-		
 		if (showLegend) {
-			drawLegend(canvas);
+			drawLegend(canvas, wPx, hPx);
 		}
-		
 		canvas.restore();
 	}
-	
-	private void drawBarChart(Canvas canvas) {
-		float barWidth = width / values.size() * 0.8f;
-		float gap = width / values.size() * 0.2f;
+	private void drawBarChart(Canvas canvas, float wPx, float hPx) {
+		float barWidth = wPx / values.size() * 0.8f;
+		float gap = wPx / values.size() * 0.2f;
 		float maxValue = getMaxValue();
-		
 		for (int i = 0; i < values.size(); i++) {
 			float left = i * (barWidth + gap);
-			float top = height - (values.get(i) / maxValue * height);
+			float top = hPx - (values.get(i) / maxValue * hPx);
 			float right = left + barWidth;
-			float bottom = height;
-			
+			float bottom = hPx;
 			chartPaint.setColor(colors.get(i));
 			canvas.drawRect(left, top, right, bottom, chartPaint);
 		}
 	}
-	
-	private void drawPieChart(Canvas canvas) {
-		RectF rect = new RectF(0, 0, Math.min(width, height), Math.min(width, height));
+	private void drawPieChart(Canvas canvas, float wPx, float hPx) {
+		RectF rect = new RectF(0, 0, Math.min(wPx, hPx), Math.min(wPx, hPx));
 		float total = getTotalValue();
 		float startAngle = 0;
-		
 		for (int i = 0; i < values.size(); i++) {
 			float sweepAngle = (values.get(i) / total) * 360;
 			chartPaint.setColor(colors.get(i));
@@ -104,18 +100,15 @@ public class ChartElement extends SlideElement {
 			startAngle += sweepAngle;
 		}
 	}
-	
-	private void drawLegend(Canvas canvas) {
-		float legendX = width + dpToPx(10); // Updated
-		float legendY = dpToPx(20); // Updated
-		float boxSize = dpToPx(12); // Updated
-		
+	private void drawLegend(Canvas canvas, float wPx, float hPx) {
+		float legendX = wPx + dpToPx(10);
+		float legendY = dpToPx(20);
+		float boxSize = dpToPx(12);
 		for (int i = 0; i < labels.size(); i++) {
 			chartPaint.setColor(colors.get(i));
 			canvas.drawRect(legendX, legendY, legendX + boxSize, legendY + boxSize, chartPaint);
-			canvas.drawText(labels.get(i), legendX + boxSize + dpToPx(5), // Updated
-			legendY + boxSize, textPaint);
-			legendY += boxSize + dpToPx(8); // Updated
+			canvas.drawText(labels.get(i), legendX + boxSize + dpToPx(5), legendY + boxSize, textPaint);
+			legendY += boxSize + dpToPx(8);
 		}
 	}
 	
@@ -148,7 +141,6 @@ public class ChartElement extends SlideElement {
 		json.put("height", height);
 		json.put("chartType", chartType);
 		json.put("showLegend", showLegend);
-		
 		JSONArray dataArray = new JSONArray();
 		for (int i = 0; i < values.size(); i++) {
 			JSONObject item = new JSONObject();
@@ -158,7 +150,6 @@ public class ChartElement extends SlideElement {
 			dataArray.put(item);
 		}
 		json.put("data", dataArray);
-		
 		return json;
 	}
 	

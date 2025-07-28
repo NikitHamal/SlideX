@@ -117,12 +117,16 @@ public class TableElement extends SlideElement {
 	}
 	
 	@Override
-	public void draw(Canvas canvas) {
+	public void draw(Canvas canvas, float canvasWidth, float canvasHeight) {
+		float xPx = getXPx(canvasWidth);
+		float yPx = getYPx(canvasHeight);
+		float wPx = getWidthPx(canvasWidth);
+		float hPx = getHeightPx(canvasHeight);
 		canvas.save();
-		canvas.translate(x, y);
+		canvas.translate(xPx, yPx);
 		
-		float cellWidth = width / columns;
-		float cellHeight = height / rows;
+		float cellWidth = wPx / columns;
+		float cellHeight = hPx / rows;
 		
 		// Draw cells
 		for (int i = 0; i < rows; i++) {

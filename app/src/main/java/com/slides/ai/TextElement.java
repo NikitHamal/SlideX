@@ -119,11 +119,75 @@ public class TextElement extends SlideElement {
 	}
 	
 	@Override
-	public void draw(Canvas canvas) {
+	public void draw(Canvas canvas, float canvasWidth, float canvasHeight) {
+		float xPx = getXPx(canvasWidth);
+		float yPx = getYPx(canvasHeight);
+		float wPx = getWidthPx(canvasWidth);
+		float hPx = getHeightPx(canvasHeight);
 		canvas.save();
-		canvas.translate(x, y);
+		canvas.translate(xPx, yPx);
+		// Recreate text layout if width changed
+		if (textLayout == null || textLayout.getWidth() != (int) wPx) {
+			createTextLayout((int) wPx);
+		}
 		textLayout.draw(canvas);
 		canvas.restore();
+	}
+
+	public void createTextLayout(int widthPx) {
+		textPaint.setTextSize(spToPx(fontSize, context));
+		textPaint.setColor(color);
+		
+		// Get fonts from MainActivity
+		Typeface regularFont = null;
+		Typeface mediumFont = null;
+		Typeface semiBoldFont = null;
+		
+		try {
+			regularFont = Typeface.createFromAsset(context.getAssets(), "reg.ttf");
+			mediumFont = Typeface.createFromAsset(context.getAssets(), "med.ttf");
+			semiBoldFont = Typeface.createFromAsset(context.getAssets(), "sem.ttf");
+		} catch (Exception e) {
+			// Fallback to system fonts
+			regularFont = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL);
+			mediumFont = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL);
+			semiBoldFont = Typeface.create(Typeface.DEFAULT, Typeface.BOLD);
+		}
+		
+		// Set typeface based on style using custom fonts
+		if (bold) {
+			textPaint.setTypeface(semiBoldFont);
+		} else if (medium) {
+			textPaint.setTypeface(mediumFont);
+		} else {
+			textPaint.setTypeface(regularFont);
+		}
+		
+		// Add italic if needed
+		if (italic) {
+			Typeface currentTypeface = textPaint.getTypeface();
+			textPaint.setTypeface(Typeface.create(currentTypeface, Typeface.ITALIC));
+		}
+		
+		// Set text alignment
+		Layout.Alignment textAlignment = Layout.Alignment.ALIGN_NORMAL; // Left
+		if (alignment.equalsIgnoreCase("center")) {
+			textAlignment = Layout.Alignment.ALIGN_CENTER;
+		} else if (alignment.equalsIgnoreCase("right")) {
+			textAlignment = Layout.Alignment.ALIGN_OPPOSITE;
+		}
+		
+		// Create static layout for text wrapping
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+			textLayout = StaticLayout.Builder.obtain(content, 0, content.length(), textPaint, widthPx)
+				.setAlignment(textAlignment)
+				.setLineSpacing(0, 1.0f)
+				.setIncludePad(false)
+				.build();
+		} else {
+			// For older Android versions
+			textLayout = new StaticLayout(content, textPaint, widthPx, textAlignment, 1.0f, 0, false);
+		}
 	}
 	
 	private float spToPx(float sp, Context context) {
