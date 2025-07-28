@@ -36,19 +36,70 @@ public class ElementFactory {
 				JSONObject element = jsonElements.getJSONObject(i);
 				String type = element.getString("type");
 				
+				Log.d("ElementFactory", "Creating element type: " + type + " at position (" + 
+					  element.optInt("x", 0) + "," + element.optInt("y", 0) + ")");
+				
 				switch (type.toLowerCase()) {
 					case "text":
-					elements.add(new TextElement(element, context));
-					break;
+						elements.add(new TextElement(element, context));
+						Log.d("ElementFactory", "Created TextElement: " + element.optString("content", ""));
+						break;
 					case "image":
-					elements.add(new ImageElement(element, context));
-					break;
+						elements.add(new ImageElement(element, context));
+						Log.d("ElementFactory", "Created ImageElement");
+						break;
 					case "shape":
-					elements.add(new ShapeElement(element, context));
-					break;
+						elements.add(new ShapeElement(element, context));
+						Log.d("ElementFactory", "Created ShapeElement: " + element.optString("shapeType", ""));
+						break;
+					// Handle Qwen format - convert rectangle to shape
+					case "rectangle":
+						element.put("type", "shape");
+						element.put("shapeType", "rectangle");
+						// Ensure minimum height for thin rectangles (lines)
+						if (element.optInt("height", 0) < 2) {
+							element.put("height", 2);
+						}
+						elements.add(new ShapeElement(element, context));
+						Log.d("ElementFactory", "Created ShapeElement from rectangle");
+						break;
+					// Handle Qwen format - convert oval to shape  
+					case "oval":
+						element.put("type", "shape");
+						element.put("shapeType", "oval");
+						// Ensure minimum dimensions for visibility
+						if (element.optInt("width", 0) < 2) {
+							element.put("width", 2);
+						}
+						if (element.optInt("height", 0) < 2) {
+							element.put("height", 2);
+						}
+						elements.add(new ShapeElement(element, context));
+						Log.d("ElementFactory", "Created ShapeElement from oval");
+						break;
+					// Handle other potential Qwen shape types
+					case "circle":
+						element.put("type", "shape");
+						element.put("shapeType", "oval");
+						elements.add(new ShapeElement(element, context));
+						Log.d("ElementFactory", "Created ShapeElement from circle");
+						break;
+					case "line":
+						element.put("type", "shape");
+						element.put("shapeType", "line");
+						elements.add(new ShapeElement(element, context));
+						Log.d("ElementFactory", "Created ShapeElement from line");
+						break;
+					case "triangle":
+						element.put("type", "shape");
+						element.put("shapeType", "triangle");
+						elements.add(new ShapeElement(element, context));
+						Log.d("ElementFactory", "Created ShapeElement from triangle");
+						break;
 					case "table":
-					elements.add(new TableElement(element, context));
-					break;
+						elements.add(new TableElement(element, context));
+						Log.d("ElementFactory", "Created TableElement");
+						break;
 					case "chart":
 					elements.add(new ChartElement(element, context));
 					break;
@@ -61,6 +112,7 @@ public class ElementFactory {
 			Log.e("ElementFactory", "Error creating elements from JSON", e);
 		}
 		
+		Log.d("ElementFactory", "Successfully created " + elements.size() + " elements from JSON");
 		return elements;
 	}
 	
