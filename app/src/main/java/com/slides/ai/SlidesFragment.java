@@ -66,6 +66,7 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
     private MaterialButton btnShapeFillColor;
     private MaterialButton btnShapeStrokeColor;
     private Slider sliderOpacity;
+    private Slider sliderStrokeWidth;
     
     private List<JSONObject> slides = new ArrayList<>();
     private int currentSlideIndex = 0;
@@ -126,6 +127,7 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
         btnShapeFillColor = view.findViewById(R.id.btn_shape_fill_color);
         btnShapeStrokeColor = view.findViewById(R.id.btn_shape_stroke_color);
         sliderOpacity = view.findViewById(R.id.slider_opacity);
+        sliderStrokeWidth = view.findViewById(R.id.slider_stroke_width);
 
         slideView = new CustomView(getContext());
         slide.addView(slideView);
