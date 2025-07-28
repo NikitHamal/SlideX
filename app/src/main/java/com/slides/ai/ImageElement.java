@@ -51,6 +51,16 @@ public class ImageElement extends SlideElement {
 	public void setCustomImage(String imageKey) {
 		this.customImageKey = imageKey;
 	}
+
+	public void setBitmap(Bitmap bitmap) {
+		// This is a placeholder.
+		// In a real app, you would likely want to save the bitmap to a file and store the URI.
+		// For now, we'll just store it in the cache.
+		String imageKey = "custom_image_" + System.currentTimeMillis();
+		this.customImageKey = imageKey;
+		// A more complete implementation would handle the image cache in the NetworkManager
+		// or a dedicated ImageCache class.
+	}
 	
 	@Override
 	public JSONObject toJson() throws JSONException {

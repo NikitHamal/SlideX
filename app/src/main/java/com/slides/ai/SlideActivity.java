@@ -303,7 +303,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
             } else {
                 handleErrorResponse("Network manager not available.");
             }
-        } else if (selectedModel.startsWith("qwen") || selected.startsWith("qwq")) {
+        } else if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq")) {
             if (qwenManager != null) {
                 // Check if we have a Qwen token first
                 String qwenToken = apiKeyManager.getQwenToken();
