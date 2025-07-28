@@ -68,8 +68,9 @@ public class ShapeElement extends SlideElement {
 			break;
 			
 			case "line":
-			shapePath.moveTo(0, 0);
-			shapePath.lineTo(width, height);
+			shapePath.moveTo(0, height / 2);
+			shapePath.lineTo(width, height / 2);
+			strokePaint.setStrokeWidth(height);
 			break;
 			
 			case "triangle":
@@ -150,18 +151,23 @@ public class ShapeElement extends SlideElement {
 	
 	@Override
 	public void draw(Canvas canvas) {
+		Log.d("ShapeElement", "Drawing shape element: " + shapeType + " at (" + x + ", " + y + ") with width " + width + " and height " + height);
 		canvas.save();
 		canvas.translate(x, y);
 		canvas.rotate(rotation, width / 2, height / 2);
-		
-		// Draw fill
-		canvas.drawPath(shapePath, fillPaint);
-		
-		// Draw stroke if stroke width > 0
-		if (strokeWidth > 0) {
+
+		if (shapeType.equalsIgnoreCase("line")) {
 			canvas.drawPath(shapePath, strokePaint);
+		} else {
+			// Draw fill
+			canvas.drawPath(shapePath, fillPaint);
+
+			// Draw stroke if stroke width > 0
+			if (strokeWidth > 0) {
+				canvas.drawPath(shapePath, strokePaint);
+			}
 		}
-		
+
 		canvas.restore();
 	}
 }

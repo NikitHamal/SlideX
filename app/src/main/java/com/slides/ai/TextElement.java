@@ -120,6 +120,7 @@ public class TextElement extends SlideElement {
 	
 	@Override
 	public void draw(Canvas canvas) {
+		Log.d("TextElement", "Drawing text element: " + content + " at (" + x + ", " + y + ") with width " + width + " and height " + height);
 		canvas.save();
 		canvas.translate(x, y);
 		canvas.rotate(rotation, width / 2, height / 2);

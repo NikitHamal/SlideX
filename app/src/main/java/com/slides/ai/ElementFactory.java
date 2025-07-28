@@ -59,6 +59,9 @@ public class ElementFactory {
 							Log.i("ElementFactory", "Successfully created ImageElement");
 							break;
 						case "shape":
+							if (element.has("shape")) {
+								element.put("shapeType", element.getString("shape"));
+							}
 							newElement = new ShapeElement(element, context);
 							Log.i("ElementFactory", "Successfully created ShapeElement: " + element.optString("shapeType", ""));
 							break;

@@ -63,18 +63,34 @@ public class NetworkManager {
 					// Construct the structured prompt with improved guidance for layout
 					String structuredPrompt = "Create a professional presentation slide based on this prompt: \"" + prompt + "\". " +
 					"The canvas size is " + canvasWidth + "x" + canvasHeight + " pixels. Please generate the slide elements accordingly." +
-					"Respond with a JSON object containing these fields:\n" +
-					"- backgroundColor: hex color code for slide background (use professional, subtle colors)\n" +
-					"- elements: array of objects, each with:\n" +
-					"  - type: 'text', 'image', 'shape', or 'table'\n" +
-					"  - for text: text, x, y, width, height, fontSize, color, bold (boolean), italic (boolean), alignment (string: 'left', 'center', 'right')\n" +
-					"  - for image: url, x, y, width, height, cornerRadius (optional)\n" +
-					"  - for shape: shapeType ('rectangle', 'oval', 'line', 'triangle', 'star', 'hexagon'), x, y, width, height, color, cornerRadius (for rectangles), opacity (0.0-1.0), strokeWidth (optional), strokeColor (optional)\n" +
-					"  - for table: rows, columns, x, y, width, height, data (2D array), headerColor, cellColor\n" +
-					"For charts: include chartType ('bar', 'pie', 'line'), data array with value, label, color\n" +
-					"For icons: include iconName ('home', 'settings', etc.) and color" +
-					"Be creative but focused. Use real image URLs. All positions (x,y) and dimensions should be in dp relative to the slide size (" + canvasWidth + "x" + canvasHeight + ").\n" +
-					"IMPORTANT: Ensure elements don't overlap and maintain proper spacing. Place title at top, ensure text is readable, and create a balanced layout with clear visual hierarchy.";
+					"You must respond with ONLY a valid JSON object (no markdown, no explanation) that contains:\n" +
+					"{\n" +
+					"  \"backgroundColor\": \"#FFFFFF\",\n" +
+					"  \"elements\": [\n" +
+					"    {\n" +
+					"      \"type\": \"text\",\n" +
+					"      \"content\": \"Slide Title\",\n" +
+					"      \"x\": 20,\n" +
+					"      \"y\": 20,\n" +
+					"      \"width\": 280,\n" +
+					"      \"height\": 40,\n" +
+					"      \"fontSize\": 24,\n" +
+					"      \"color\": \"#000000\",\n" +
+					"      \"bold\": true,\n" +
+					"      \"alignment\": \"center\"\n" +
+					"    }\n" +
+					"  ]\n" +
+					"}\n" +
+					"Guidelines:\n" +
+					"- Use slide dimensions " + canvasWidth + "x" + canvasHeight + "dp\n" +
+					"- Position elements with proper spacing\n" +
+					"- Include title, content, and optionally images/shapes\n" +
+					"- Use readable fonts (fontSize 12-24)\n" +
+					"- Choose professional colors\n" +
+					"- For images, use real public URLs\n" +
+					"- For shapes: type can be 'rectangle', 'oval', 'line'\n" +
+					"- Ensure no element overlap\n" +
+					"IMPORTANT: Return ONLY the JSON object, nothing else.";
 					
 					// Create JSON request body
 					JSONObject requestBody = new JSONObject();
