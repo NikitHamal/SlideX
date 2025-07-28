@@ -283,7 +283,8 @@ public class SlideRenderer {
 						float scaleRatio = (widthRatio + heightRatio) / 2.0f;
 						
 						// Scale the text size (corrected line)
-						textElement.fontSize = textElement.fontSize * scaleRatio;
+						if(scaleRatio > 0 && scaleRatio < 2)
+						    textElement.fontSize = textElement.fontSize * scaleRatio;
 						
 						// Recreate the text layout with new size
 						textElement.createTextLayout();
@@ -389,33 +390,33 @@ public class SlideRenderer {
 			float otherCenterY = other.y + other.height / 2;
 			
 			// Check horizontal alignment (left, center, right)
-			checkAndShowHorizontal(left, otherLeft, element, -1, 0);
-			checkAndShowHorizontal(centerX, otherCenterX, element, 0, 0);
-			checkAndShowHorizontal(right, otherRight, element, 1, 0);
-			
+			checkAndShowHorizontal(left, otherLeft);
+			checkAndShowHorizontal(centerX, otherCenterX);
+			checkAndShowHorizontal(right, otherRight);
+
 			// Also check left to right and right to left
-			checkAndShowHorizontal(left, otherRight, element, -1, 0);
-			checkAndShowHorizontal(right, otherLeft, element, 1, 0);
-			
+			checkAndShowHorizontal(left, otherRight);
+			checkAndShowHorizontal(right, otherLeft);
+
 			// Check vertical alignment (top, center, bottom)
-			checkAndShowVertical(top, otherTop, element, -1, 0);
-			checkAndShowVertical(centerY, otherCenterY, element, 0, 0);
-			checkAndShowVertical(bottom, otherBottom, element, 1, 0);
-			
+			checkAndShowVertical(top, otherTop);
+			checkAndShowVertical(centerY, otherCenterY);
+			checkAndShowVertical(bottom, otherBottom);
+
 			// Also check top to bottom and bottom to top
-			checkAndShowVertical(top, otherBottom, element, -1, 0);
-			checkAndShowVertical(bottom, otherTop, element, 1, 0);
+			checkAndShowVertical(top, otherBottom);
+			checkAndShowVertical(bottom, otherTop);
 		}
 	}
 	
-	private void checkAndShowHorizontal(float value1, float value2, SlideElement element, int edge, float offset) {
+	private void checkAndShowHorizontal(float value1, float value2) {
 		if (Math.abs(value1 - value2) < snapThreshold / scaleFactor) {
 			// Add guide for visualization
 			verticalGuides.add(value2);
 		}
 	}
-	
-	private void checkAndShowVertical(float value1, float value2, SlideElement element, int edge, float offset) {
+
+	private void checkAndShowVertical(float value1, float value2) {
 		if (Math.abs(value1 - value2) < snapThreshold / scaleFactor) {
 			// Add guide for visualization
 			horizontalGuides.add(value2);
@@ -459,10 +460,17 @@ public class SlideRenderer {
 			Paint selectionPaint = new Paint();
 			selectionPaint.setStyle(Paint.Style.STROKE);
 			selectionPaint.setColor(ContextCompat.getColor(context, R.color.md_theme_primary));
-			selectionPaint.setStrokeWidth(dpToPx(2) / scaleFactor);
+			selectionPaint.setStrokeWidth(dpToPx(1) / scaleFactor);
 			selectionPaint.setAntiAlias(true);
 
-			canvas.drawRect(elementRect, selectionPaint);
+			RectF selectionRect = new RectF(
+					elementRect.left - dpToPx(2) / scaleFactor,
+					elementRect.top - dpToPx(2) / scaleFactor,
+					elementRect.right + dpToPx(2) / scaleFactor,
+					elementRect.bottom + dpToPx(2) / scaleFactor
+			);
+
+			canvas.drawRect(selectionRect, selectionPaint);
 
 			drawModernResizeHandles(canvas, elementRect);
 		}

@@ -12,6 +12,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import android.util.Log;
 import com.bumptech.glide.request.transition.Transition;
 
 import org.json.JSONException;
