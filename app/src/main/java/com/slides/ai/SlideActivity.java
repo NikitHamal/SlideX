@@ -61,6 +61,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.slides.ai.qwen.QwenManager;
 
 public class SlideActivity extends AppCompatActivity implements SlideRenderer.ElementSelectionListener,
 CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener, 
@@ -83,6 +84,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 
 	private SlideRenderer slideRenderer;
 	private NetworkManager networkManager;
+	private QwenManager qwenManager;
 	private CustomizationManager customizationManager;
 	private ApiKeyManager apiKeyManager;
 
@@ -118,6 +120,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 
 		apiKeyManager = new ApiKeyManager(this);
 		networkManager = new NetworkManager(apiKeyManager, imageCache, mainHandler, executorService);
+		qwenManager = new QwenManager(apiKeyManager, mainHandler, executorService);
 
 		// Initialize slide renderer once we have the slides fragment
 		setupSlideRenderer();
@@ -265,81 +268,139 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 
 	@Override
 	public void onChatPromptSent(String prompt) {
-		// Handle chat prompt and generate slide
-		if (networkManager != null) {
-			networkManager.sendPromptToGemini(prompt, new NetworkManager.ApiResponseCallback() {
-				@Override
-				public void onSuccess(String jsonStr) {
-					try {
-						// Parse the JSON and add it as a new slide
-						JSONObject slideData = new JSONObject(jsonStr);
-						
-						// Add to code fragment
-						ensureFragmentReferences();
-						if (codeFragment != null) {
-						    if (codeFragment.isCurrentSlideDefault()) {
-						        codeFragment.setCode(jsonStr);
-                                onCodeSaved(jsonStr, 0);
-                            } else {
-                                codeFragment.addSlideFromJson(jsonStr);
-                            }
-							
-							// Update slides fragment
-							if (slidesFragment != null) {
-								List<String> allSlides = codeFragment.getAllSlides();
-								List<JSONObject> slideObjects = new ArrayList<>();
-								for (String slide : allSlides) {
-									try {
-										slideObjects.add(new JSONObject(slide));
-									} catch (JSONException e) {
-										Log.e("SlideActivity", "Invalid JSON for slide: " + e.getMessage());
-									}
-								}
-								if (!slideObjects.isEmpty()) {
-									slidesFragment.setSlides(slideObjects);
-									slidesFragment.navigateToSlide(slideObjects.size() - 1); // Navigate to new slide
-								}
-							}
-						}
-						
-						// Switch to slides tab to show the result
-						viewPager.setCurrentItem(0);
-						
-						// Add AI response to chat
-						if (chatFragment != null) {
-							chatFragment.addAiResponse("Great! I've created a slide based on your request. You can view it in the Slides tab and edit the JSON code in the Code tab if needed.");
-						}
-						
-					} catch (JSONException e) {
-						Log.e("SlideActivity", "Error parsing generated JSON: " + e.getMessage());
-						if (chatFragment != null) {
-							chatFragment.addAiResponse("I generated a slide, but there was an error parsing the JSON. Please check the Code tab and fix any formatting issues.");
-						}
-					}
-				}
+        ensureFragmentReferences();
+        String selectedModel = chatFragment.getSelectedModel();
 
-				@Override
-				public void onError(String errorMessage) {
-					Log.e("SlideActivity", "Chat API error: " + errorMessage);
-					if (chatFragment != null) {
-						String userFriendlyMessage;
-						if (errorMessage.contains("API key")) {
-							userFriendlyMessage = "Please add a valid Gemini API key in Settings to use the AI chat feature.";
-						} else if (errorMessage.contains("quota") || errorMessage.contains("limit")) {
-							userFriendlyMessage = "API quota exceeded. Please try again later or check your API key limits.";
-						} else {
-							userFriendlyMessage = "Sorry, I couldn't process your request right now. Please try again or create slides manually using the Code tab.";
-						}
-						chatFragment.addAiResponse(userFriendlyMessage);
-					}
-				}
-			});
-		} else {
-			if (chatFragment != null) {
-				chatFragment.addAiResponse("Network manager not available. Please restart the app and try again.");
-			}
-		}
+		if (selectedModel.startsWith("gemini")) {
+            if (networkManager != null) {
+                networkManager.sendPromptToGemini(prompt, new NetworkManager.ApiResponseCallback() {
+                    @Override
+                    public void onSuccess(String jsonStr) {
+                        handleSuccessfulResponse(jsonStr);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        handleErrorResponse(errorMessage);
+                    }
+                });
+            } else {
+                handleErrorResponse("Network manager not available.");
+            }
+        } else if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq")) {
+            if (qwenManager != null) {
+                qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
+                    @Override
+                    public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
+                        if (response.success) {
+                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, new QwenManager.QwenCallback<String>() {
+                                @Override
+                                public void onSuccess(String completion) {
+                                    try {
+                                        // Extract JSON from the response text
+                                        String jsonStr = extractJsonFromResponse(completion);
+                                        handleSuccessfulResponse(jsonStr);
+                                    } catch (Exception e) {
+                                        handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage());
+                                    }
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    handleErrorResponse(error);
+                                }
+                            });
+                        } else {
+                            handleErrorResponse("Error creating new Qwen chat.");
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        handleErrorResponse(error);
+                    }
+                });
+            } else {
+                handleErrorResponse("Qwen manager not available.");
+            }
+        }
 	}
+
+    private void handleSuccessfulResponse(String jsonStr) {
+        try {
+            // Parse the JSON and add it as a new slide
+            JSONObject slideData = new JSONObject(jsonStr);
+
+            // Add to code fragment
+            ensureFragmentReferences();
+            if (codeFragment != null) {
+                if (codeFragment.isCurrentSlideDefault()) {
+                    codeFragment.setCode(jsonStr);
+                    onCodeSaved(jsonStr, 0);
+                } else {
+                    codeFragment.addSlideFromJson(jsonStr);
+                }
+
+                // Update slides fragment
+                if (slidesFragment != null) {
+                    List<String> allSlides = codeFragment.getAllSlides();
+                    List<JSONObject> slideObjects = new ArrayList<>();
+                    for (String slide : allSlides) {
+                        try {
+                            slideObjects.add(new JSONObject(slide));
+                        } catch (JSONException e) {
+                            Log.e("SlideActivity", "Invalid JSON for slide: " + e.getMessage());
+                        }
+                    }
+                    if (!slideObjects.isEmpty()) {
+                        slidesFragment.setSlides(slideObjects);
+                        slidesFragment.navigateToSlide(slideObjects.size() - 1); // Navigate to new slide
+                    }
+                }
+            }
+
+            // Switch to slides tab to show the result
+            viewPager.setCurrentItem(0);
+
+            // Add AI response to chat
+            if (chatFragment != null) {
+                chatFragment.addAiResponse("Great! I've created a slide based on your request. You can view it in the Slides tab and edit the JSON code in the Code tab if needed.");
+            }
+
+        } catch (JSONException e) {
+            Log.e("SlideActivity", "Error parsing generated JSON: " + e.getMessage());
+            if (chatFragment != null) {
+                chatFragment.addAiResponse("I generated a slide, but there was an error parsing the JSON. Please check the Code tab and fix any formatting issues.");
+            }
+        }
+    }
+
+    private void handleErrorResponse(String errorMessage) {
+        Log.e("SlideActivity", "Chat API error: " + errorMessage);
+        if (chatFragment != null) {
+            String userFriendlyMessage;
+            if (errorMessage.contains("API key")) {
+                userFriendlyMessage = "Please add a valid API key in Settings to use the AI chat feature.";
+            } else if (errorMessage.contains("quota") || errorMessage.contains("limit")) {
+                userFriendlyMessage = "API quota exceeded. Please try again later or check your API key limits.";
+            } else {
+                userFriendlyMessage = "Sorry, I couldn't process your request right now. Please try again or create slides manually using the Code tab.";
+            }
+            chatFragment.addAiResponse(userFriendlyMessage);
+        }
+    }
+
+    private String extractJsonFromResponse(String response) {
+        // Find the first { and the last } to extract JSON
+        int startIdx = response.indexOf('{');
+        int endIdx = response.lastIndexOf('}');
+
+        if (startIdx != -1 && endIdx != -1 && endIdx > startIdx) {
+            return response.substring(startIdx, endIdx + 1);
+        } else {
+            throw new IllegalArgumentException("No valid JSON found in response");
+        }
+    }
 
 	private void saveSlideStackIfTemporary() {
 		// Only save if this is a temporary stack (starts with "temp_")

@@ -29,9 +29,10 @@ public class ChatFragment extends Fragment {
     private ImageButton sendButton;
     private Button modelSelectorButton;
     private String selectedModel = "gemini-2.0-flash";
-    private QwenManager qwenManager;
-    private String qwenChatId;
-    private String qwenParentId;
+
+    public String getSelectedModel() {
+        return selectedModel;
+    }
     
     private ChatInteractionListener chatInteractionListener;
 
@@ -74,8 +75,6 @@ public class ChatFragment extends Fragment {
         // Add welcome message
         addWelcomeMessage();
 
-        qwenManager = new QwenManager(new ApiKeyManager(getContext()), new android.os.Handler(), Executors.newSingleThreadExecutor());
-
         return view;
     }
 
@@ -90,51 +89,12 @@ public class ChatFragment extends Fragment {
         // Show typing indicator
         addAiMessage("Creating your slide...");
         
-        if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq") || selectedModel.startsWith("gemini")) {
-            if (qwenChatId == null) {
-                qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
-                    @Override
-                    public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
-                        if (response.success) {
-                            qwenChatId = response.data.id;
-                            qwenParentId = null; // First message has no parent
-                            sendQwenMessage(message);
-                        } else {
-                            addAiResponse("Error creating new Qwen chat.");
-                        }
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        addAiResponse("Error: " + error);
-                    }
-                });
-            } else {
-                sendQwenMessage(message);
-            }
-        } else {
-            // Send to parent activity for processing
-            if (chatInteractionListener != null) {
-                chatInteractionListener.onChatPromptSent(message);
-            }
+        // Send to parent activity for processing
+        if (chatInteractionListener != null) {
+            chatInteractionListener.onChatPromptSent(message);
         }
     }
 
-    private void sendQwenMessage(String message) {
-        qwenManager.getCompletion(qwenChatId, qwenParentId, message, selectedModel, new QwenManager.QwenCallback<String>() {
-            @Override
-            public void onSuccess(String completion) {
-                addAiResponse(completion);
-                // The response should contain the new parentId, but for now we'll just leave it null
-                // In a real implementation, we would parse the response to get the new parentId
-            }
-
-            @Override
-            public void onError(String error) {
-                addAiResponse("Error: " + error);
-            }
-        });
-    }
 
     private void addUserMessage(String message) {
         chatMessages.add(new ChatMessage(message, true));

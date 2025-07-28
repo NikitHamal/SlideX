@@ -152,35 +152,41 @@ public class NetworkManager {
 				}
 				
 				// Process result on main thread
-				final String finalResult = result;
-				mainHandler.post(new Runnable() {
-					@Override
-					public void run() {
-						if (finalResult.startsWith("ERROR:")) {
-							callback.onError(finalResult);
-							return;
-						}
-						
-						try {
-							// Parse the Gemini API response
-							JSONObject response = new JSONObject(finalResult);
-							JSONArray candidates = response.getJSONArray("candidates");
-							JSONObject firstCandidate = candidates.getJSONObject(0);
-							JSONObject content = firstCandidate.getJSONObject("content");
-							JSONArray parts = content.getJSONArray("parts");
-							JSONObject firstPart = parts.getJSONObject(0);
-							String text = firstPart.getString("text");
-							
-							// Extract JSON from the response text
-							String jsonStr = extractJsonFromResponse(text);
-							callback.onSuccess(jsonStr);
-							
-						} catch (Exception e) {
-							callback.onError("Error processing response: " + e.getMessage());
-							e.printStackTrace();
-						}
-					}
-				});
+                final String finalResult = result;
+                mainHandler.post(() -> {
+                    if (finalResult != null && finalResult.startsWith("ERROR:")) {
+                        callback.onError(finalResult);
+                    } else if (finalResult != null) {
+                        try {
+                            // Parse the Gemini API response
+                            JSONObject response = new JSONObject(finalResult);
+                            JSONArray candidates = response.getJSONArray("candidates");
+                            if (candidates.length() > 0) {
+                                JSONObject firstCandidate = candidates.getJSONObject(0);
+                                JSONObject content = firstCandidate.getJSONObject("content");
+                                JSONArray parts = content.getJSONArray("parts");
+                                if (parts.length() > 0) {
+                                    JSONObject firstPart = parts.getJSONObject(0);
+                                    String text = firstPart.getString("text");
+
+                                    // Extract JSON from the response text
+                                    String jsonStr = extractJsonFromResponse(text);
+                                    callback.onSuccess(jsonStr);
+                                } else {
+                                    callback.onError("Empty parts in response");
+                                }
+                            } else {
+                                callback.onError("No candidates in response");
+                            }
+
+                        } catch (Exception e) {
+                            callback.onError("Error processing response: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    } else {
+                        callback.onError("Empty response from server");
+                    }
+                });
 			}
 		});
 		
