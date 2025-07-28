@@ -88,13 +88,13 @@ public class ImageElement extends SlideElement {
 		
 		if (bitmap != null) {
 			// Scale bitmap to fit element dimensions while maintaining aspect ratio
-			float scale = Math.min((float) width / bitmap.getWidth(), (float) height / bitmap.getHeight());
-			int scaledWidth = (int) (bitmap.getWidth() * scale);
-			int scaledHeight = (int) (bitmap.getHeight() * scale);
+			float scale = Math.min(width / bitmap.getWidth(), height / bitmap.getHeight());
+			float scaledWidth = bitmap.getWidth() * scale;
+			float scaledHeight = bitmap.getHeight() * scale;
 			
 			// Center the image
-			int left = (width - scaledWidth) / 2;
-			int top = (height - scaledHeight) / 2;
+			float left = (width - scaledWidth) / 2f;
+			float top = (height - scaledHeight) / 2f;
 			
 			RectF destRect = new RectF(left, top, left + scaledWidth, top + scaledHeight);
 			canvas.drawBitmap(bitmap, null, destRect, null);

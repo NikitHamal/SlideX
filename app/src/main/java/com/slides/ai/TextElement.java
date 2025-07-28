@@ -88,15 +88,16 @@ public class TextElement extends SlideElement {
 		}
 		
 		// Create static layout for text wrapping
+		int layoutWidth = Math.max(1, (int) width); // Ensure width is at least 1
 		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-			textLayout = StaticLayout.Builder.obtain(content, 0, content.length(), textPaint, width)
+			textLayout = StaticLayout.Builder.obtain(content, 0, content.length(), textPaint, layoutWidth)
 			.setAlignment(textAlignment)
 			.setLineSpacing(0, 1.0f)
 			.setIncludePad(false)
 			.build();
 		} else {
 			// For older Android versions
-			textLayout = new StaticLayout(content, textPaint, width, textAlignment, 1.0f, 0, false);
+			textLayout = new StaticLayout(content, textPaint, layoutWidth, textAlignment, 1.0f, 0, false);
 		}
 	}
 	
@@ -122,7 +123,9 @@ public class TextElement extends SlideElement {
 	public void draw(Canvas canvas) {
 		canvas.save();
 		canvas.translate(x, y);
-		textLayout.draw(canvas);
+		if (textLayout != null) {
+			textLayout.draw(canvas);
+		}
 		canvas.restore();
 	}
 	

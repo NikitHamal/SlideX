@@ -98,7 +98,7 @@ public class ChartElement extends SlideElement {
 		float startAngle = 0;
 		
 		for (int i = 0; i < values.size(); i++) {
-			float sweepAngle = (values.get(i) / total) * 360;
+			float sweepAngle = (values.get(i) / total) * 360f;
 			chartPaint.setColor(colors.get(i));
 			canvas.drawArc(rect, startAngle, sweepAngle, true, chartPaint);
 			startAngle += sweepAngle;

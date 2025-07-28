@@ -73,7 +73,7 @@ public class ShapeElement extends SlideElement {
 			break;
 			
 			case "triangle":
-			shapePath.moveTo(width / 2, 0);
+			shapePath.moveTo(width / 2f, 0);
 			shapePath.lineTo(width, height);
 			shapePath.lineTo(0, height);
 			shapePath.close();

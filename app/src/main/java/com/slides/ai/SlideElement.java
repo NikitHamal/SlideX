@@ -9,13 +9,27 @@ import org.json.JSONObject;
  * Base class for all slide elements
  */
 public abstract class SlideElement {
-    protected int x, y, width, height;
+    protected float x, y, width, height;
     
     public SlideElement(JSONObject json, Context context) throws JSONException {
-        x = dpToPx(json.getInt("x"), context);
-        y = dpToPx(json.getInt("y"), context);
-        width = dpToPx(json.getInt("width"), context);
-        height = dpToPx(json.getInt("height"), context);
+        x = dpToPx((float) getJsonNumber(json, "x"), context);
+        y = dpToPx((float) getJsonNumber(json, "y"), context);
+        width = dpToPx((float) getJsonNumber(json, "width"), context);
+        height = dpToPx((float) getJsonNumber(json, "height"), context);
+    }
+    
+    private static double getJsonNumber(JSONObject json, String key) throws JSONException {
+        Object value = json.get(key);
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
+        } else if (value instanceof String) {
+            try {
+                return Double.parseDouble((String) value);
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+        return 0;
     }
     
     public abstract void draw(Canvas canvas);
@@ -25,8 +39,8 @@ public abstract class SlideElement {
     }
     
     // Helper method for dp to px conversion
-    protected static int dpToPx(float dp, Context context) {
-        return (int) (dp * context.getResources().getDisplayMetrics().density);
+    protected static float dpToPx(float dp, Context context) {
+        return dp * context.getResources().getDisplayMetrics().density;
     }
     
     // Add abstract toJson method

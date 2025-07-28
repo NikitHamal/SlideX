@@ -148,8 +148,8 @@ public class TableElement extends SlideElement {
 					textPaint.getTextBounds(text, 0, text.length(), textBounds);
 					
 					// Center text in cell
-					float textX = left + (cellWidth - textBounds.width()) / 2;
-					float textY = top + (cellHeight + textBounds.height()) / 2;
+					float textX = left + (cellWidth - textBounds.width()) / 2f;
+					float textY = top + (cellHeight + textBounds.height()) / 2f;
 					
 					canvas.drawText(text, textX, textY, textPaint);
 				}
