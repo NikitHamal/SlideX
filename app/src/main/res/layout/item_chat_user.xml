@@ -14,6 +14,6 @@
         android:padding="12dp"
         android:textColor="@color/md_theme_onPrimary"
         android:textSize="14sp"
-        android:maxWidth="280dp" />
+        android:textIsSelectable="true" />
 
 </LinearLayout>

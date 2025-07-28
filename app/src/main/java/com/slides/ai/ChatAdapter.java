@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
+import io.noties.markwon.Markwon;
+
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHolder> {
 
     private static final int VIEW_TYPE_USER = 1;
@@ -46,7 +48,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
     @Override
     public void onBindViewHolder(@NonNull MessageViewHolder holder, int position) {
         ChatMessage message = messages.get(position);
-        holder.messageText.setText(message.getText());
+        if (message.isUser()) {
+            holder.messageText.setText(message.getText());
+        } else {
+            Markwon markwon = Markwon.create(holder.itemView.getContext());
+            markwon.setMarkdown(holder.messageText, message.getText());
+        }
+
+        int screenWidth = holder.itemView.getContext().getResources().getDisplayMetrics().widthPixels;
+        int maxWidth = (int) (screenWidth * 0.8);
+        holder.messageText.setMaxWidth(maxWidth);
     }
 
     @Override

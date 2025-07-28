@@ -195,6 +195,16 @@ public class CodeFragment extends Fragment {
         return slideJsonList.size();
     }
 
+    public boolean isCurrentSlideDefault() {
+        if (currentSlideIndex == 0 && getSlideCount() == 1) {
+            String currentCode = getCode().trim();
+            String defaultCode = generateDefaultSlideJson().trim();
+            // We need to compare the content without the slide number, as it can change
+            return currentCode.contains("\"text\": \"Edit this slide content\"");
+        }
+        return false;
+    }
+
     public void navigateToSlide(int index) {
         if (index >= 0 && index < slideJsonList.size()) {
             TabLayout.Tab tab = slidesTabLayout.getTabAt(index);

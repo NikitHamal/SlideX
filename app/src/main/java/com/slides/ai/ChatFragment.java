@@ -90,7 +90,7 @@ public class ChatFragment extends Fragment {
         // Show typing indicator
         addAiMessage("Creating your slide...");
         
-        if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq")) {
+        if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq") || selectedModel.startsWith("gemini")) {
             if (qwenChatId == null) {
                 qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
                     @Override

@@ -66,7 +66,7 @@ public class NetworkManager {
 					"- backgroundColor: hex color code for slide background (use professional, subtle colors)\n" +
 					"- elements: array of objects, each with:\n" +
 					"  - type: 'text', 'image', 'shape', or 'table'\n" +
-					"  - for text: content, x, y, width, height, fontSize, color, bold (boolean), italic (boolean), alignment (string: 'left', 'center', 'right')\n" +
+					"  - for text: text, x, y, width, height, fontSize, color, bold (boolean), italic (boolean), alignment (string: 'left', 'center', 'right')\n" +
 					"  - for image: url, x, y, width, height, cornerRadius (optional)\n" +
 					"  - for shape: shapeType ('rectangle', 'oval', 'line', 'triangle', 'star', 'hexagon'), x, y, width, height, color, cornerRadius (for rectangles), opacity (0.0-1.0), strokeWidth (optional), strokeColor (optional)\n" +
 					"  - for table: rows, columns, x, y, width, height, data (2D array), headerColor, cellColor\n" +

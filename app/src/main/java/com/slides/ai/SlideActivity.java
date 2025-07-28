@@ -277,7 +277,12 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 						// Add to code fragment
 						ensureFragmentReferences();
 						if (codeFragment != null) {
-							codeFragment.addSlideFromJson(jsonStr);
+						    if (codeFragment.isCurrentSlideDefault()) {
+						        codeFragment.setCode(jsonStr);
+                                onCodeSaved(jsonStr, 0);
+                            } else {
+                                codeFragment.addSlideFromJson(jsonStr);
+                            }
 							
 							// Update slides fragment
 							if (slidesFragment != null) {
