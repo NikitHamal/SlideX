@@ -63,10 +63,11 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 public class SlideActivity extends AppCompatActivity implements SlideRenderer.ElementSelectionListener,
-CustomizationManager.ImageSelectionCallback {
+CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener {
 
 	private ViewPager2 viewPager;
 	private TabLayout tabLayout;
+	private ViewPagerAdapter adapter;
 
 	private final String API_KEY = "Gemini_API";
 	private final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
@@ -93,6 +94,11 @@ CustomizationManager.ImageSelectionCallback {
 	private String stackId;
 	private String stackName;
 
+	// Fragment references
+	private SlidesFragment slidesFragment;
+	private CodeFragment codeFragment;
+	private ChatFragment chatFragment;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -103,25 +109,8 @@ CustomizationManager.ImageSelectionCallback {
 		stackId = intent.getStringExtra("stack_id");
 		stackName = intent.getStringExtra("stack_name");
 
-		tabLayout = findViewById(R.id.tab_layout);
-		viewPager = findViewById(R.id.view_pager);
-
-		ViewPagerAdapter adapter = new ViewPagerAdapter(this);
-		viewPager.setAdapter(adapter);
-
-		new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-			switch (position) {
-				case 0:
-					tab.setText("Slides");
-					break;
-				case 1:
-					tab.setText("Chat");
-					break;
-				case 2:
-					tab.setText("Code");
-					break;
-			}
-		}).attach();
+		initViews();
+		setupFragments();
 
 		mainHandler = new Handler();
 		executorService = Executors.newCachedThreadPool();
@@ -129,11 +118,87 @@ CustomizationManager.ImageSelectionCallback {
 		apiKeyManager = new ApiKeyManager(this);
 		networkManager = new NetworkManager(apiKeyManager, imageCache, mainHandler, executorService);
 
-		customizationManager = new CustomizationManager(this, slideRenderer);
-		customizationManager.setImageSelectionCallback(this);
+		// Initialize slide renderer once we have the slides fragment
+		setupSlideRenderer();
 	}
 
+	private void initViews() {
+		tabLayout = findViewById(R.id.tab_layout);
+		viewPager = findViewById(R.id.view_pager);
 
+		// Setup toolbar
+		setSupportActionBar(findViewById(R.id.toolbar));
+		if (getSupportActionBar() != null) {
+			getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+			getSupportActionBar().setTitle(stackName != null ? stackName : "Slide Editor");
+		}
+	}
+
+	private void setupFragments() {
+		adapter = new ViewPagerAdapter(this);
+		viewPager.setAdapter(adapter);
+
+		new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
+			switch (position) {
+				case 0:
+					tab.setText("Slides");
+					tab.setIcon(R.drawable.ic_slides_preview);
+					break;
+				case 1:
+					tab.setText("Chat");
+					tab.setIcon(R.drawable.ic_chat);
+					break;
+				case 2:
+					tab.setText("Code");
+					tab.setIcon(R.drawable.ic_code);
+					break;
+			}
+		}).attach();
+
+		// Wait for fragments to be created then get references
+		viewPager.post(() -> {
+			slidesFragment = adapter.getSlidesFragment();
+			codeFragment = adapter.getCodeFragment();
+			chatFragment = adapter.getChatFragment();
+
+			// Set code interaction listener
+			if (codeFragment != null) {
+				codeFragment.setCodeInteractionListener(this);
+			}
+		});
+	}
+
+	private void setupSlideRenderer() {
+		// Wait for the slides fragment to be created
+		new Handler().postDelayed(() -> {
+			if (slidesFragment != null) {
+				customizationManager = new CustomizationManager(this, slidesFragment.getSlideRenderer());
+				customizationManager.setImageSelectionCallback(this);
+			}
+		}, 100);
+	}
+
+	@Override
+	public void onCodeSaved(String jsonCode) {
+		try {
+			JSONObject slideData = new JSONObject(jsonCode);
+			
+			// Update the slides fragment with new data
+			if (slidesFragment != null) {
+				slidesFragment.setSlideData(slideData);
+			}
+			
+			// Save the slide stack if it's temporary
+			saveSlideStackIfTemporary();
+			
+			// Switch to slides tab to show the rendered slide
+			viewPager.setCurrentItem(0);
+			
+			Toast.makeText(this, "Slide updated successfully", Toast.LENGTH_SHORT).show();
+		} catch (JSONException e) {
+			Toast.makeText(this, "Invalid JSON format", Toast.LENGTH_SHORT).show();
+		}
+	}
 
 	private void saveSlideStackIfTemporary() {
 		// Only save if this is a temporary stack (starts with "temp_")
@@ -142,12 +207,12 @@ CustomizationManager.ImageSelectionCallback {
 				// Change the ID to a permanent one
 				stackId = "stack_" + System.currentTimeMillis();
 
-				// Get current slide data
-				JSONObject slideData = slideRenderer.getSlideData();
-				if (slideData != null) {
+				// Get current slide data from code fragment
+				String jsonCode = codeFragment != null ? codeFragment.getCode() : "";
+				if (!jsonCode.isEmpty()) {
 					// Create a slide stack with the current slide
-					List<JSONObject> slides = new ArrayList<>();
-					slides.add(slideData);
+					List<String> slides = new ArrayList<>();
+					slides.add(jsonCode);
 
 					// Save to shared preferences
 					android.content.SharedPreferences sharedPreferences = getSharedPreferences("slide_stacks", MODE_PRIVATE);
@@ -163,7 +228,7 @@ CustomizationManager.ImageSelectionCallback {
 
 					// Add slides array
 					JSONArray slidesArray = new JSONArray();
-					for (JSONObject slide : slides) {
+					for (String slide : slides) {
 						slidesArray.put(slide);
 					}
 					stackObj.put("slides", slidesArray);
@@ -182,12 +247,21 @@ CustomizationManager.ImageSelectionCallback {
 		}
 	}
 
+	@Override
+	public boolean onSupportNavigateUp() {
+		finish();
+		return true;
+	}
 
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		networkManager.cleanup();
-		executorService.shutdown();
+		if (networkManager != null) {
+			networkManager.cleanup();
+		}
+		if (executorService != null) {
+			executorService.shutdown();
+		}
 	}
 
 	private int dpToPx(float dp) {
@@ -201,7 +275,9 @@ CustomizationManager.ImageSelectionCallback {
 	@Override
 	public void onElementSelected(SlideElement element) {
 		selectedElement = element;
-		customizationManager.showElementCustomizationDialog(element);
+		if (customizationManager != null) {
+			customizationManager.showElementCustomizationDialog(element);
+		}
 	}
 
 	@Override
@@ -277,7 +353,7 @@ CustomizationManager.ImageSelectionCallback {
 
 			if (format.equals("PDF")) {
 				pendingExportFormat = format;
-				//saveAsPdf(); // TODO: Implement this
+				Toast.makeText(this, "PDF export will be implemented soon", Toast.LENGTH_SHORT).show();
 			} else {
 				// Parse quality and size
 				String quality = qualitySpinner.getText().toString();
@@ -304,7 +380,7 @@ CustomizationManager.ImageSelectionCallback {
 				pendingExportScale = scale;
 				pendingExportTransparent = transparent;
 
-				//saveSlideAsImage(format, qualityValue, scale, transparent); // TODO: Implement this
+				Toast.makeText(this, "Image export will be implemented soon", Toast.LENGTH_SHORT).show();
 			}
 		})
 		.setNegativeButton("Cancel", null);
@@ -312,9 +388,12 @@ CustomizationManager.ImageSelectionCallback {
 		AlertDialog dialog = builder.create();
 		dialog.show();
 
-		dialog.getWindow().setLayout(
-		ViewGroup.LayoutParams.MATCH_PARENT,
-		ViewGroup.LayoutParams.WRAP_CONTENT
-		);
+		// Ensure the dialog is properly sized
+		if (dialog.getWindow() != null) {
+			dialog.getWindow().setLayout(
+				ViewGroup.LayoutParams.MATCH_PARENT,
+				ViewGroup.LayoutParams.WRAP_CONTENT
+			);
+		}
 	}
 }

@@ -42,8 +42,14 @@ public class SlidesFragment extends Fragment {
     }
 
     public void setSlideData(JSONObject json) {
-        slideRenderer.setSlideData(json);
-        slideView.invalidate();
+        if (slideRenderer != null) {
+            slideRenderer.setSlideData(json);
+            slideView.invalidate();
+        }
+    }
+
+    public SlideRenderer getSlideRenderer() {
+        return slideRenderer;
     }
 
     private class CustomView extends View {
@@ -56,12 +62,14 @@ public class SlidesFragment extends Fragment {
         @Override
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
-            slideRenderer.draw(canvas);
+            if (slideRenderer != null) {
+                slideRenderer.draw(canvas);
+            }
         }
 
         @Override
         public boolean onTouchEvent(MotionEvent event) {
-            return slideRenderer.handleTouchEvent(event);
+            return slideRenderer != null && slideRenderer.handleTouchEvent(event);
         }
     }
 }

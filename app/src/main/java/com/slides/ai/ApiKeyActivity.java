@@ -10,6 +10,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.appbar.MaterialToolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +24,7 @@ import java.util.Locale;
 
 public class ApiKeyActivity extends AppCompatActivity {
 
+    private MaterialToolbar toolbar;
     private RecyclerView recyclerView;
     private ApiKeyAdapter adapter;
     private List<ApiKeyManager.ApiKey> apiKeys;
@@ -34,19 +36,49 @@ public class ApiKeyActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_api_key);
 
+        initViews();
+        setupRecyclerView();
+        loadApiKeys();
+        updateEmptyState();
+    }
+
+    private void initViews() {
+        toolbar = findViewById(R.id.toolbar);
         recyclerView = findViewById(R.id.api_key_recycler_view);
         emptyState = findViewById(R.id.empty_state);
         FloatingActionButton addFab = findViewById(R.id.add_api_key_fab);
 
+        // Setup toolbar
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("API Keys");
+        }
+        
+        // Handle toolbar navigation
+        toolbar.setNavigationOnClickListener(v -> finish());
+
         apiKeyManager = new ApiKeyManager(this);
-        apiKeys = apiKeyManager.getApiKeyObjects();
-
-        adapter = new ApiKeyAdapter(apiKeys);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(adapter);
-
         addFab.setOnClickListener(v -> showAddApiKeyDialog());
+    }
 
+    private void setupRecyclerView() {
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // Add item spacing for better Material 3 appearance
+        recyclerView.addItemDecoration(new androidx.recyclerview.widget.RecyclerView.ItemDecoration() {
+            @Override
+            public void getItemOffsets(android.graphics.Rect outRect, android.view.View view, 
+                    androidx.recyclerview.widget.RecyclerView parent, 
+                    androidx.recyclerview.widget.RecyclerView.State state) {
+                outRect.bottom = 8;
+            }
+        });
+    }
+
+    private void loadApiKeys() {
+        apiKeys = apiKeyManager.getApiKeyObjects();
+        adapter = new ApiKeyAdapter(apiKeys);
+        recyclerView.setAdapter(adapter);
         updateEmptyState();
     }
 
@@ -61,7 +93,8 @@ public class ApiKeyActivity extends AppCompatActivity {
     }
 
     private void showAddApiKeyDialog() {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this,
+                R.style.ThemeOverlay_Material3_MaterialAlertDialog_Centered);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_api_key, null);
 
         TextInputLayout labelLayout = dialogView.findViewById(R.id.labelLayout);
@@ -70,6 +103,7 @@ public class ApiKeyActivity extends AppCompatActivity {
         TextInputEditText keyEdit = dialogView.findViewById(R.id.keyEdit);
 
         builder.setTitle("Add API Key")
+                .setMessage("Enter your API key details to use AI features")
                 .setView(dialogView)
                 .setPositiveButton("Add", (dialog, which) -> {
                     String label = labelEdit.getText().toString().trim();
@@ -80,11 +114,12 @@ public class ApiKeyActivity extends AppCompatActivity {
                         return;
                     }
 
+                    if (label.isEmpty()) {
+                        label = "API Key " + (apiKeys.size() + 1);
+                    }
+
                     apiKeyManager.addApiKey(label, key);
-                    apiKeys.clear();
-                    apiKeys.addAll(apiKeyManager.getApiKeyObjects());
-                    adapter.notifyDataSetChanged();
-                    updateEmptyState();
+                    loadApiKeys(); // Reload the list
                     Toast.makeText(this, "API key added successfully", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
@@ -139,9 +174,10 @@ public class ApiKeyActivity extends AppCompatActivity {
                 dateText.setText("Added " + sdf.format(new Date(key.getCreatedAt())));
 
                 deleteButton.setOnClickListener(v -> {
-                    new MaterialAlertDialogBuilder(ApiKeyActivity.this)
+                    new MaterialAlertDialogBuilder(ApiKeyActivity.this,
+                            R.style.ThemeOverlay_Material3_MaterialAlertDialog_Centered)
                             .setTitle("Delete API Key")
-                            .setMessage("Are you sure you want to delete this API key?")
+                            .setMessage("Are you sure you want to delete \"" + key.getLabel() + "\"? This action cannot be undone.")
                             .setPositiveButton("Delete", (dialog, which) -> {
                                 apiKeyManager.removeApiKey(key.getId());
                                 keys.remove(getAdapterPosition());

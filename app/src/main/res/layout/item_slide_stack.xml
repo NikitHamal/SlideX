@@ -2,12 +2,13 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Widget.Material3.CardView.Elevated"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
-    app:strokeWidth="0dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="3dp"
+    app:cardBackgroundColor="@color/md_theme_surfaceContainer"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground">
@@ -16,60 +17,117 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
         <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Material3.CardView.Outlined"
             android:layout_width="match_parent"
-            android:layout_height="90dp"
+            android:layout_height="100dp"
             android:layout_marginBottom="16dp"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/md_theme_outlineVariant">
+            app:strokeWidth="2dp"
+            app:strokeColor="@color/md_theme_outline"
+            app:cardBackgroundColor="@color/md_theme_surface">
 
-            <ImageView
-                android:id="@+id/previewImage"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@color/md_theme_surfaceContainerHigh"
-                android:scaleType="centerInside"
-                android:src="@drawable/ic_slides_preview"
-                android:tint="@color/md_theme_onSurfaceVariant"
-                android:alpha="0.7" />
+                android:layout_height="match_parent">
+
+                <ImageView
+                    android:id="@+id/previewImage"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_gravity="center"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_slides_preview"
+                    android:tint="@color/md_theme_primary"
+                    android:alpha="0.8" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/slide_gradient_overlay" />
+
+            </FrameLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/titleText"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:text="Slide Stack Title"
-            android:textColor="@color/md_theme_onSurface"
-            android:textSize="16sp"
-            android:fontFamily="@font/sem"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
 
-        <TextView
-            android:id="@+id/slideCountText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:text="0 slides"
-            android:textColor="@color/md_theme_onSurfaceVariant"
-            android:textSize="14sp"
-            android:fontFamily="@font/reg" />
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_slides_preview"
+                android:tint="@color/md_theme_primary" />
 
-        <TextView
-            android:id="@+id/lastModifiedText"
+            <TextView
+                android:id="@+id/titleText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:text="Slide Stack Title"
+                android:textColor="@color/md_theme_onSurface"
+                android:textSize="18sp"
+                android:fontFamily="sans-serif-medium"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Modified today"
-            android:textColor="@color/md_theme_onSurfaceVariant"
-            android:textSize="12sp"
-            android:fontFamily="@font/reg" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="4dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_layers"
+                android:tint="@color/md_theme_onSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/slideCountText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 slides"
+                android:textColor="@color/md_theme_onSurfaceVariant"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_schedule"
+                android:tint="@color/md_theme_onSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/lastModifiedText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Modified today"
+                android:textColor="@color/md_theme_onSurfaceVariant"
+                android:textSize="12sp" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

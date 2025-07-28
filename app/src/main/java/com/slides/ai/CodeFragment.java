@@ -35,9 +35,19 @@ public class CodeFragment extends Fragment {
         codeInput = view.findViewById(R.id.code_input);
         saveFab = view.findViewById(R.id.save_fab);
 
+        // Set default sample JSON
+        setDefaultSampleCode();
+
         saveFab.setOnClickListener(v -> {
             if (listener != null) {
-                listener.onCodeSaved(codeInput.getText().toString());
+                String code = codeInput.getText().toString().trim();
+                if (!code.isEmpty()) {
+                    listener.onCodeSaved(code);
+                } else {
+                    // Show error or set default
+                    setDefaultSampleCode();
+                    listener.onCodeSaved(codeInput.getText().toString());
+                }
             }
         });
 
@@ -45,6 +55,45 @@ public class CodeFragment extends Fragment {
     }
 
     public void setCode(String json) {
-        codeInput.setText(json);
+        if (codeInput != null) {
+            codeInput.setText(json);
+        }
+    }
+
+    public String getCode() {
+        return codeInput != null ? codeInput.getText().toString() : "";
+    }
+
+    private void setDefaultSampleCode() {
+        String sampleJson = "{\n" +
+            "  \"backgroundColor\": \"#FFFFFF\",\n" +
+            "  \"elements\": [\n" +
+            "    {\n" +
+            "      \"type\": \"text\",\n" +
+            "      \"x\": 50,\n" +
+            "      \"y\": 50,\n" +
+            "      \"width\": 220,\n" +
+            "      \"height\": 40,\n" +
+            "      \"text\": \"Welcome to Slides AI\",\n" +
+            "      \"fontSize\": 24,\n" +
+            "      \"color\": \"#333333\",\n" +
+            "      \"fontWeight\": \"bold\"\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"type\": \"text\",\n" +
+            "      \"x\": 50,\n" +
+            "      \"y\": 100,\n" +
+            "      \"width\": 220,\n" +
+            "      \"height\": 60,\n" +
+            "      \"text\": \"Create beautiful presentations with JSON\",\n" +
+            "      \"fontSize\": 16,\n" +
+            "      \"color\": \"#666666\"\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}";
+        
+        if (codeInput != null) {
+            codeInput.setText(sampleJson);
+        }
     }
 }
