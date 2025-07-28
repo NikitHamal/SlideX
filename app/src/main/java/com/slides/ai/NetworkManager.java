@@ -194,14 +194,69 @@ public class NetworkManager {
 	}
 	
 	private String extractJsonFromResponse(String response) {
-		// Find the first { and the last } to extract JSON
+		// First try to find JSON wrapped in markdown code blocks
+		if (response.contains("```json")) {
+			int startIdx = response.indexOf("```json") + 7;
+			int endIdx = response.lastIndexOf("```");
+			if (endIdx > startIdx) {
+				String jsonStr = response.substring(startIdx, endIdx).trim();
+				if (isValidJson(jsonStr)) {
+					return jsonStr;
+				}
+			}
+		}
+
+		// Try to find JSON wrapped in any code blocks
+		if (response.contains("```")) {
+			int startIdx = response.indexOf("```");
+			int secondStart = response.indexOf('\n', startIdx);
+			if (secondStart > startIdx) {
+				int endIdx = response.lastIndexOf("```");
+				if (endIdx > secondStart) {
+					String jsonStr = response.substring(secondStart + 1, endIdx).trim();
+					if (isValidJson(jsonStr)) {
+						return jsonStr;
+					}
+				}
+			}
+		}
+
+		// Find the first complete JSON object
 		int startIdx = response.indexOf('{');
-		int endIdx = response.lastIndexOf('}');
-		
-		if (startIdx != -1 && endIdx != -1 && endIdx > startIdx) {
-			return response.substring(startIdx, endIdx + 1);
-		} else {
-			throw new IllegalArgumentException("No valid JSON found in response");
+		if (startIdx != -1) {
+			int braceCount = 0;
+			int endIdx = startIdx;
+			
+			for (int i = startIdx; i < response.length(); i++) {
+				char c = response.charAt(i);
+				if (c == '{') {
+					braceCount++;
+				} else if (c == '}') {
+					braceCount--;
+					if (braceCount == 0) {
+						endIdx = i;
+						break;
+					}
+				}
+			}
+			
+			if (braceCount == 0 && endIdx > startIdx) {
+				String jsonStr = response.substring(startIdx, endIdx + 1);
+				if (isValidJson(jsonStr)) {
+					return jsonStr;
+				}
+			}
+		}
+
+		throw new IllegalArgumentException("No valid JSON found in response: " + response);
+	}
+
+	private boolean isValidJson(String jsonStr) {
+		try {
+			new JSONObject(jsonStr);
+			return true;
+		} catch (JSONException e) {
+			return false;
 		}
 	}
 	

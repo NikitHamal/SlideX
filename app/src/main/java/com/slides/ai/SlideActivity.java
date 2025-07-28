@@ -35,6 +35,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
+import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -92,6 +93,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	private static final int SLIDE_WIDTH = 320;
 	private static final int SLIDE_HEIGHT = 200;
 	private static final int PICK_IMAGE_REQUEST = 1;
+	private static final int WRITE_EXTERNAL_STORAGE_PERMISSION = 2;
 	private SlideElement selectedElement;
 	
 	// Stack information for saving
@@ -405,22 +407,69 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
     }
 
     private String extractJsonFromResponse(String response) {
+        // First try to find JSON wrapped in markdown code blocks
         if (response.contains("```json")) {
             int startIdx = response.indexOf("```json") + 7;
             int endIdx = response.lastIndexOf("```");
             if (endIdx > startIdx) {
-                return response.substring(startIdx, endIdx);
+                String jsonStr = response.substring(startIdx, endIdx).trim();
+                if (isValidJson(jsonStr)) {
+                    return jsonStr;
+                }
             }
         }
 
-        // Find the first { and the last } to extract JSON
-        int startIdx = response.indexOf('{');
-        int endIdx = response.lastIndexOf('}');
+        // Try to find JSON wrapped in any code blocks
+        if (response.contains("```")) {
+            int startIdx = response.indexOf("```");
+            int secondStart = response.indexOf('\n', startIdx);
+            if (secondStart > startIdx) {
+                int endIdx = response.lastIndexOf("```");
+                if (endIdx > secondStart) {
+                    String jsonStr = response.substring(secondStart + 1, endIdx).trim();
+                    if (isValidJson(jsonStr)) {
+                        return jsonStr;
+                    }
+                }
+            }
+        }
 
-        if (startIdx != -1 && endIdx != -1 && endIdx > startIdx) {
-            return response.substring(startIdx, endIdx + 1);
-        } else {
-            throw new IllegalArgumentException("No valid JSON found in response");
+        // Find the first complete JSON object
+        int startIdx = response.indexOf('{');
+        if (startIdx != -1) {
+            int braceCount = 0;
+            int endIdx = startIdx;
+            
+            for (int i = startIdx; i < response.length(); i++) {
+                char c = response.charAt(i);
+                if (c == '{') {
+                    braceCount++;
+                } else if (c == '}') {
+                    braceCount--;
+                    if (braceCount == 0) {
+                        endIdx = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (braceCount == 0 && endIdx > startIdx) {
+                String jsonStr = response.substring(startIdx, endIdx + 1);
+                if (isValidJson(jsonStr)) {
+                    return jsonStr;
+                }
+            }
+        }
+
+        throw new IllegalArgumentException("No valid JSON found in response: " + response);
+    }
+
+    private boolean isValidJson(String jsonStr) {
+        try {
+            new org.json.JSONObject(jsonStr);
+            return true;
+        } catch (org.json.JSONException e) {
+            return false;
         }
     }
 
@@ -587,7 +636,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 
 			if (format.equals("PDF")) {
 				pendingExportFormat = format;
-				Toast.makeText(this, "PDF export will be implemented soon", Toast.LENGTH_SHORT).show();
+				checkStoragePermissionAndExport();
 			} else {
 				// Parse quality and size
 				String quality = qualitySpinner.getText().toString();
@@ -614,7 +663,8 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 				pendingExportScale = scale;
 				pendingExportTransparent = transparent;
 
-				Toast.makeText(this, "Image export will be implemented soon", Toast.LENGTH_SHORT).show();
+				// Check for storage permission and export
+				checkStoragePermissionAndExport();
 			}
 		})
 		.setNegativeButton("Cancel", null);
@@ -629,5 +679,230 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 				ViewGroup.LayoutParams.WRAP_CONTENT
 			);
 		}
+	}
+
+	private void checkStoragePermissionAndExport() {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+			// Android 10+ - no need for WRITE_EXTERNAL_STORAGE permission
+			performExport();
+		} else {
+			// Android 9 and below - need WRITE_EXTERNAL_STORAGE permission
+			if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) 
+				!= PackageManager.PERMISSION_GRANTED) {
+				ActivityCompat.requestPermissions(this, 
+					new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 
+					WRITE_EXTERNAL_STORAGE_PERMISSION);
+			} else {
+				performExport();
+			}
+		}
+	}
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		if (requestCode == WRITE_EXTERNAL_STORAGE_PERMISSION) {
+			if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+				performExport();
+			} else {
+				Toast.makeText(this, "Storage permission required to save image", Toast.LENGTH_SHORT).show();
+			}
+		}
+	}
+
+	private void performExport() {
+		if (pendingExportFormat == null) {
+			Toast.makeText(this, "Export format not set", Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		if (pendingExportFormat.equals("PDF")) {
+			exportToPdf();
+		} else {
+			exportToImage();
+		}
+	}
+
+	private void exportToImage() {
+		executorService.execute(() -> {
+			try {
+				ensureFragmentReferences();
+				if (slidesFragment == null || slidesFragment.getSlideRenderer() == null) {
+					mainHandler.post(() -> Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show());
+					return;
+				}
+
+				// Create bitmap from slide
+				int width = (int)(SLIDE_WIDTH * pendingExportScale);
+				int height = (int)(SLIDE_HEIGHT * pendingExportScale);
+				
+				Bitmap bitmap = Bitmap.createBitmap(width, height, 
+					pendingExportTransparent ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
+				Canvas canvas = new Canvas(bitmap);
+
+				// Clear background
+				if (!pendingExportTransparent) {
+					canvas.drawColor(Color.WHITE);
+				}
+
+				// Scale canvas for higher resolution
+				canvas.scale(pendingExportScale, pendingExportScale);
+
+				// Draw slide content
+				slidesFragment.getSlideRenderer().draw(canvas);
+
+				// Save to storage
+				String fileName = "slide_" + System.currentTimeMillis() + 
+					(pendingExportFormat.equals("PNG") ? ".png" : ".jpg");
+				
+				boolean saved = saveBitmapToStorage(bitmap, fileName, pendingExportFormat, pendingExportQuality);
+
+				mainHandler.post(() -> {
+					if (saved) {
+						Toast.makeText(this, "Slide exported as " + fileName, Toast.LENGTH_LONG).show();
+					} else {
+						Toast.makeText(this, "Failed to export slide", Toast.LENGTH_SHORT).show();
+					}
+				});
+
+			} catch (Exception e) {
+				Log.e("SlideActivity", "Export error: " + e.getMessage());
+				mainHandler.post(() -> Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+			}
+		});
+	}
+
+	private boolean saveBitmapToStorage(Bitmap bitmap, String fileName, String format, int quality) {
+		try {
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+				// Use MediaStore for Android 10+
+				ContentResolver resolver = getContentResolver();
+				ContentValues contentValues = new ContentValues();
+				contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+				contentValues.put(MediaStore.MediaColumns.MIME_TYPE, 
+					format.equals("PNG") ? "image/png" : "image/jpeg");
+				contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/AI Slides");
+
+				Uri imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+				if (imageUri != null) {
+					OutputStream outputStream = resolver.openOutputStream(imageUri);
+					if (outputStream != null) {
+						Bitmap.CompressFormat compressFormat = format.equals("PNG") ? 
+							Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
+						bitmap.compress(compressFormat, quality, outputStream);
+						outputStream.close();
+						return true;
+					}
+				}
+			} else {
+				// Use external storage for Android 9 and below
+				File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+				File aiSlidesDir = new File(picturesDir, "AI Slides");
+				if (!aiSlidesDir.exists()) {
+					aiSlidesDir.mkdirs();
+				}
+
+				File imageFile = new File(aiSlidesDir, fileName);
+				FileOutputStream outputStream = new FileOutputStream(imageFile);
+				
+				Bitmap.CompressFormat compressFormat = format.equals("PNG") ? 
+					Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
+				bitmap.compress(compressFormat, quality, outputStream);
+				outputStream.close();
+
+				// Notify media scanner
+				MediaScannerConnection.scanFile(this, new String[]{imageFile.getAbsolutePath()}, null, null);
+				return true;
+			}
+		} catch (Exception e) {
+			Log.e("SlideActivity", "Save error: " + e.getMessage());
+		}
+		return false;
+	}
+
+	private void exportToPdf() {
+		executorService.execute(() -> {
+			try {
+				ensureFragmentReferences();
+				if (slidesFragment == null || slidesFragment.getSlideRenderer() == null) {
+					mainHandler.post(() -> Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show());
+					return;
+				}
+
+				// Create PDF document
+				PdfDocument pdfDocument = new PdfDocument();
+				PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(
+					SLIDE_WIDTH * 2, SLIDE_HEIGHT * 2, 1).create(); // 2x scale for better quality
+				PdfDocument.Page page = pdfDocument.startPage(pageInfo);
+
+				Canvas canvas = page.getCanvas();
+				canvas.scale(2.0f, 2.0f); // Scale up for better quality
+
+				// Draw slide content
+				slidesFragment.getSlideRenderer().draw(canvas);
+
+				pdfDocument.finishPage(page);
+
+				// Save PDF
+				String fileName = "slide_" + System.currentTimeMillis() + ".pdf";
+				boolean saved = savePdfToStorage(pdfDocument, fileName);
+
+				pdfDocument.close();
+
+				mainHandler.post(() -> {
+					if (saved) {
+						Toast.makeText(this, "Slide exported as " + fileName, Toast.LENGTH_LONG).show();
+					} else {
+						Toast.makeText(this, "Failed to export PDF", Toast.LENGTH_SHORT).show();
+					}
+				});
+
+			} catch (Exception e) {
+				Log.e("SlideActivity", "PDF export error: " + e.getMessage());
+				mainHandler.post(() -> Toast.makeText(this, "PDF export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+			}
+		});
+	}
+
+	private boolean savePdfToStorage(PdfDocument pdfDocument, String fileName) {
+		try {
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+				// Use MediaStore for Android 10+
+				ContentResolver resolver = getContentResolver();
+				ContentValues contentValues = new ContentValues();
+				contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+				contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf");
+				contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/AI Slides");
+
+				Uri pdfUri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues);
+				if (pdfUri != null) {
+					OutputStream outputStream = resolver.openOutputStream(pdfUri);
+					if (outputStream != null) {
+						pdfDocument.writeTo(outputStream);
+						outputStream.close();
+						return true;
+					}
+				}
+			} else {
+				// Use external storage for Android 9 and below
+				File documentsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+				File aiSlidesDir = new File(documentsDir, "AI Slides");
+				if (!aiSlidesDir.exists()) {
+					aiSlidesDir.mkdirs();
+				}
+
+				File pdfFile = new File(aiSlidesDir, fileName);
+				FileOutputStream outputStream = new FileOutputStream(pdfFile);
+				pdfDocument.writeTo(outputStream);
+				outputStream.close();
+
+				// Notify media scanner
+				MediaScannerConnection.scanFile(this, new String[]{pdfFile.getAbsolutePath()}, null, null);
+				return true;
+			}
+		} catch (Exception e) {
+			Log.e("SlideActivity", "PDF save error: " + e.getMessage());
+		}
+		return false;
 	}
 }
