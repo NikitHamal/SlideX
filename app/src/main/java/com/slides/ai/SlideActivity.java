@@ -305,39 +305,50 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
             }
         } else if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq")) {
             if (qwenManager != null) {
+                // Check if we have a Qwen token first
+                String qwenToken = apiKeyManager.getQwenToken();
+                if (qwenToken == null || qwenToken.trim().isEmpty()) {
+                    handleErrorResponse("No Qwen API token available. Please add your token from chat.qwen.ai in Settings → API Keys.");
+                    return;
+                }
+                
                 qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
                     @Override
                     public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
-                        if (response.success) {
+                        if (response != null && response.success && response.data != null) {
                             qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, new QwenManager.QwenCallback<String>() {
                                 @Override
-                                public void onSuccess(String completion) {
+                                public void onSuccess(String jsonResponse) {
                                     try {
-                                        // Extract JSON from the response text
-                                        String jsonStr = extractJsonFromResponse(completion);
+                                        String jsonStr = extractJsonFromResponse(jsonResponse);
                                         handleSuccessfulResponse(jsonStr);
                                     } catch (Exception e) {
+                                        Log.e("SlideActivity", "Error extracting JSON from Qwen response", e);
                                         handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage());
                                     }
                                 }
 
                                 @Override
                                 public void onError(String error) {
-                                    handleErrorResponse(error);
+                                    Log.e("SlideActivity", "Qwen completion error: " + error);
+                                    handleErrorResponse("Qwen API error: " + error);
                                 }
                             });
                         } else {
-                            handleErrorResponse("Error creating new Qwen chat.");
+                            Log.e("SlideActivity", "Qwen new chat response invalid: " + (response != null ? response.toString() : "null"));
+                            handleErrorResponse("Error creating new Qwen chat session.");
                         }
                     }
 
                     @Override
                     public void onError(String error) {
-                        handleErrorResponse(error);
+                        Log.e("SlideActivity", "Qwen new chat error: " + error);
+                        handleErrorResponse("Qwen API error: " + error);
                     }
                 });
             } else {
-                handleErrorResponse("Qwen manager not available.");
+                Log.e("SlideActivity", "QwenManager is null");
+                handleErrorResponse("Qwen manager not available. Please restart the app.");
             }
         }
 	}

@@ -348,8 +348,10 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
     }
 
     private void setupImageElementUI(ImageElement element) {
-        // Set corner radius
-        sliderCornerRadius.setValue(element.cornerRadius / dpToPx(1));
+        // Set corner radius - ensure value is compatible with stepSize
+        float cornerRadiusValue = element.cornerRadius / dpToPx(1);
+        // Round to nearest integer to match stepSize of 1
+        sliderCornerRadius.setValue(Math.round(cornerRadiusValue));
     }
 
     private void setupShapeElementUI(ShapeElement element) {
@@ -359,8 +361,16 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
         // Set stroke color
         btnShapeStrokeColor.setBackgroundTintList(ColorStateList.valueOf(element.strokeColor));
         
-        // Set opacity
-        sliderOpacity.setValue(element.opacity * 100);
+        // Set corner radius - ensure value is compatible with stepSize
+        float cornerRadiusValue = element.cornerRadius / dpToPx(1);
+        sliderCornerRadius.setValue(Math.round(cornerRadiusValue));
+        
+        // Set stroke width - ensure value is compatible with stepSize  
+        float strokeWidthValue = element.strokeWidth / dpToPx(1);
+        sliderStrokeWidth.setValue(Math.round(strokeWidthValue));
+        
+        // Set opacity - ensure value is compatible with stepSize (0-100)
+        sliderOpacity.setValue(Math.round(element.opacity * 100));
     }
 
     private void hideCustomizationToolbar() {
