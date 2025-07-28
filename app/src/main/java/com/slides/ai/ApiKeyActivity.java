@@ -118,7 +118,7 @@ public class ApiKeyActivity extends AppCompatActivity {
                         label = "API Key " + (apiKeys.size() + 1);
                     }
 
-                    apiKeyManager.addApiKey(label, key);
+                    apiKeyManager.addApiKey(key, label);
                     loadApiKeys(); // Reload the list
                     Toast.makeText(this, "API key added successfully", Toast.LENGTH_SHORT).show();
                 })

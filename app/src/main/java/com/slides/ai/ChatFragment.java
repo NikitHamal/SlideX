@@ -4,12 +4,16 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import com.slides.ai.qwen.QwenManager;
+import java.util.concurrent.Executors;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -23,6 +27,9 @@ public class ChatFragment extends Fragment {
     private List<ChatMessage> chatMessages;
     private EditText chatInput;
     private ImageButton sendButton;
+    private Button modelSelectorButton;
+    private String selectedModel = "Gemini";
+    private QwenManager qwenManager;
     
     private ChatInteractionListener chatInteractionListener;
 
@@ -42,6 +49,9 @@ public class ChatFragment extends Fragment {
         chatRecyclerView = view.findViewById(R.id.chat_recycler_view);
         chatInput = view.findViewById(R.id.chat_input);
         sendButton = view.findViewById(R.id.send_button);
+        modelSelectorButton = view.findViewById(R.id.model_selector_button);
+
+        modelSelectorButton.setOnClickListener(v -> showModelSelectionDialog());
 
         chatMessages = new ArrayList<>();
         chatAdapter = new ChatAdapter(chatMessages);
@@ -62,6 +72,8 @@ public class ChatFragment extends Fragment {
         // Add welcome message
         addWelcomeMessage();
 
+        qwenManager = new QwenManager(new ApiKeyManager(getContext()), new android.os.Handler(), Executors.newSingleThreadExecutor());
+
         return view;
     }
 
@@ -76,9 +88,37 @@ public class ChatFragment extends Fragment {
         // Show typing indicator
         addAiMessage("Creating your slide...");
         
-        // Send to parent activity for processing
-        if (chatInteractionListener != null) {
-            chatInteractionListener.onChatPromptSent(message);
+        if (selectedModel.equals("Qwen")) {
+            qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
+                @Override
+                public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
+                    if (response.success) {
+                        qwenManager.getCompletion(response.data.id, message, new QwenManager.QwenCallback<String>() {
+                            @Override
+                            public void onSuccess(String completion) {
+                                addAiResponse(completion);
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                addAiResponse("Error: " + error);
+                            }
+                        });
+                    } else {
+                        addAiResponse("Error creating new chat.");
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    addAiResponse("Error: " + error);
+                }
+            });
+        } else {
+            // Send to parent activity for processing
+            if (chatInteractionListener != null) {
+                chatInteractionListener.onChatPromptSent(message);
+            }
         }
     }
 
@@ -105,5 +145,19 @@ public class ChatFragment extends Fragment {
 
     public void addAiResponse(String response) {
         addAiMessage(response);
+    }
+
+    private void showModelSelectionDialog() {
+        final String[] models = {"Gemini", "Qwen"};
+        int checkedItem = selectedModel.equals("Qwen") ? 1 : 0;
+
+        new MaterialAlertDialogBuilder(getContext())
+                .setTitle("Select Model")
+                .setSingleChoiceItems(models, checkedItem, (dialog, which) -> {
+                    selectedModel = models[which];
+                    modelSelectorButton.setText(selectedModel);
+                    dialog.dismiss();
+                })
+                .show();
     }
 }

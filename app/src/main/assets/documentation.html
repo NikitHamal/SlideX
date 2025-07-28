@@ -1,96 +1,178 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SlideX Documentation</title>
+    <title>SlidesAI Documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             line-height: 1.6;
-            padding: 16px;
-        }
-        h1, h2, h3 {
+            padding: 20px;
+            background-color: #f7f9fc;
             color: #333;
         }
+        h1, h2, h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
         code {
-            background-color: #f4f4f4;
-            padding: 2px 4px;
-            border-radius: 4px;
+            background-color: #e8eaed;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.95em;
+        }
+        pre {
+            background-color: #e8eaed;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
-    <h1>SlideX Documentation</h1>
+    <div class="container">
+        <h1>SlidesAI Documentation</h1>
 
-    <h2>Introduction</h2>
-    <p>
-        Welcome to the SlideX documentation. Here you will find information about how to use the app,
-        including details about the JSON structure for creating slides.
-    </p>
+        <h2>Introduction</h2>
+        <p>
+            Welcome to the SlidesAI documentation. This guide provides detailed information on how to use the app, with a focus on the JSON structure for creating slides and leveraging the AI capabilities.
+        </p>
 
-    <h2>JSON Structure</h2>
-    <p>
-        The slides are generated from a JSON object. The basic structure of the JSON is as follows:
-    </p>
-    <pre><code>
+        <h2>AI Chat</h2>
+        <p>
+            The Chat tab allows you to generate slides using natural language prompts. You can select from different AI models to generate the slide content.
+        </p>
+        <ul>
+            <li><b>Gemini:</b> Google's powerful AI model.</li>
+            <li><b>Qwen:</b> A new experimental AI model.</li>
+        </ul>
+        <p>
+            To generate a slide, simply type a prompt in the chat box, such as "Create a slide about the solar system", and the AI will generate the corresponding JSON for you.
+        </p>
+
+        <h2>JSON Structure</h2>
+        <p>
+            All slides are defined by a JSON object. This allows for precise control over every element on the slide.
+        </p>
+        <h3>Root Object</h3>
+        <p>The root JSON object has the following properties:</p>
+        <ul>
+            <li><code>backgroundColor</code>: (Optional) A hex color string (e.g., <code>"#FFFFFF"</code>) for the slide's background.</li>
+            <li><code>elements</code>: An array of element objects that will be rendered on the slide.</li>
+        </ul>
+
+        <h3>Elements</h3>
+        <p>
+            The <code>elements</code> array contains a list of objects, each representing an element on the slide. Each element must have a <code>type</code> property.
+        </p>
+
+        <pre><code>
 {
+  "backgroundColor": "#F0F4F8",
   "elements": [
     {
       "type": "text",
-      "text": "Hello, World!",
-      "x": 50,
-      "y": 50,
-      "size": 24,
-      "color": "#000000"
+      "text": "Welcome to SlidesAI",
+      "x": 20, "y": 20, "width": 280, "height": 40,
+      "fontSize": 28, "color": "#34495e", "fontWeight": "bold"
     },
     {
       "type": "image",
-      "url": "https://example.com/image.png",
-      "x": 100,
-      "y": 100,
-      "width": 100,
-      "height": 100
+      "url": "https://i.imgur.com/6J2z1J2.png",
+      "x": 40, "y": 80, "width": 240, "height": 100,
+      "cornerRadius": 10
     }
   ]
 }
-    </code></pre>
+        </code></pre>
 
-    <h3>Elements</h3>
-    <p>
-        The <code>elements</code> array contains a list of objects, each representing an element on the slide.
-        Each element has a <code>type</code> property, which can be one of the following:
-    </p>
-    <ul>
-        <li><code>text</code></li>
-        <li><code>image</code></li>
-        <li><code>shape</code></li>
-        <li><code>table</code></li>
-        <li><code>chart</code></li>
-        <li><code>icon</code></li>
-    </ul>
+        <h2>Element Types</h2>
 
-    <h3>Text Element</h3>
-    <p>
-        The <code>text</code> element has the following properties:
-    </p>
-    <ul>
-        <li><code>text</code>: The text to display.</li>
-        <li><code>x</code>: The x-coordinate of the text.</li>
-        <li><code>y</code>: The y-coordinate of the text.</li>
-        <li><code>size</code>: The font size of the text.</li>
-        <li><code>color</code>: The color of the text in hex format.</li>
-    </ul>
+        <h3>Text Element</h3>
+        <ul>
+            <li><code>type</code>: "text"</li>
+            <li><code>text</code>: The string content to display.</li>
+            <li><code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>: Position and dimensions.</li>
+            <li><code>fontSize</code>: The font size in sp.</li>
+            <li><code>color</code>: Hex color string.</li>
+            <li><code>fontWeight</code>: (Optional) "bold" or "normal".</li>
+            <li><code>italic</code>: (Optional) <code>true</code> or <code>false</code>.</li>
+            <li><code>alignment</code>: (Optional) "left", "center", or "right".</li>
+        </ul>
 
-    <h3>Image Element</h3>
-    <p>
-        The <code>image</code> element has the following properties:
-    </p>
-    <ul>
-        <li><code>url</code>: The URL of the image.</li>
-        <li><code>x</code>: The x-coordinate of the image.</li>
-        <li><code>y</code>: The y-coordinate of the image.</li>
-        <li><code>width</code>: The width of the image.</li>
-        <li><code>height</code>: The height of the image.</li>
-    </ul>
+        <h3>Image Element</h3>
+        <ul>
+            <li><code>type</code>: "image"</li>
+            <li><code>url</code>: The URL of the image.</li>
+            <li><code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>: Position and dimensions.</li>
+            <li><code>cornerRadius</code>: (Optional) The radius for rounded corners.</li>
+        </ul>
 
+        <h3>Shape Element</h3>
+        <ul>
+            <li><code>type</code>: "shape"</li>
+            <li><code>shapeType</code>: "rectangle", "oval", "line", "triangle", "star", or "hexagon".</li>
+            <li><code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>: Position and dimensions.</li>
+            <li><code>color</code>: Hex color string for the fill.</li>
+            <li><code>cornerRadius</code>: (Optional) For rectangles.</li>
+            <li><code>opacity</code>: (Optional) From 0.0 to 1.0.</li>
+            <li><code>strokeWidth</code>, <code>strokeColor</code>: (Optional) For the element's border.</li>
+        </ul>
+
+        <h3>Icon Element</h3>
+        <ul>
+            <li><code>type</code>: "icon"</li>
+            <li><code>iconName</code>: The name of the Material Icon (e.g., "settings", "home").</li>
+            <li><code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>: Position and dimensions.</li>
+            <li><code>color</code>: Hex color string.</li>
+        </ul>
+
+        <h3>Chart Element</h3>
+        <ul>
+            <li><code>type</code>: "chart"</li>
+            <li><code>chartType</code>: "bar", "pie", or "line".</li>
+            <li><code>data</code>: An array of data points, each with <code>label</code> (string) and <code>value</code> (number).</li>
+            <li><code>showLegend</code>: (Optional) <code>true</code> or <code>false</code>.</li>
+        </ul>
+
+        <h3>Table Element</h3>
+        <ul>
+            <li><code>type</code>: "table"</li>
+            <li><code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>: Position and dimensions.</li>
+            <li><code>rows</code>, <code>columns</code>: Number of rows and columns.</li>
+            <li><code>data</code>: A 2D array of strings for the cell content.</li>
+            <li><code>headerColor</code>, <code>cellColor</code>, <code>borderColor</code>: (Optional) Hex color strings.</li>
+            <li><code>borderWidth</code>: (Optional) The width of the border.</li>
+        </ul>
+
+        <h2>AI Agent Instructions</h2>
+        <p>
+            When building or modifying the app, please adhere to the following guidelines:
+        </p>
+        <ul>
+            <li>The slide rendering is handled by <code>SlideRenderer.java</code>. All element drawing logic is contained within the respective element classes (e.g., <code>TextElement.java</code>).</li>
+            <li>The Gemini AI is integrated via <code>NetworkManager.java</code>.</li>
+            <li>The Qwen AI is integrated via <code>QwenManager.java</code> in the <code>com.slides.ai.qwen</code> package.</li>
+            <li>The UI is defined in XML layouts and managed by the corresponding Activity or Fragment classes.</li>
+            <li>Before submitting, ensure that all new features are documented in this file.</li>
+        </ul>
+    </div>
 </body>
 </html>

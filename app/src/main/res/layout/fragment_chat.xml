@@ -13,6 +13,17 @@
         android:clipToPadding="false"
         android:padding="8dp" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/model_selector_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/input_layout"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="8dp"
+        android:text="Gemini"
+        android:textSize="12sp"
+        app:cornerRadius="30dp" />
+
     <LinearLayout
         android:id="@+id/input_layout"
         android:layout_width="match_parent"
