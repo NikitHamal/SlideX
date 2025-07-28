@@ -6,12 +6,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +26,9 @@ public class ChatFragment extends Fragment {
     private List<ChatMessage> chatMessages;
     private EditText chatInput;
     private ImageButton sendButton;
+    private TextView modelSelector;
+    private String selectedModel = "Gemini";
+    private final String[] availableModels = {"Gemini", "Qwen3-235B", "Qwen3-Coder"};
     
     private ChatInteractionListener chatInteractionListener;
 
@@ -42,6 +48,7 @@ public class ChatFragment extends Fragment {
         chatRecyclerView = view.findViewById(R.id.chat_recycler_view);
         chatInput = view.findViewById(R.id.chat_input);
         sendButton = view.findViewById(R.id.send_button);
+        modelSelector = view.findViewById(R.id.model_selector);
 
         chatMessages = new ArrayList<>();
         chatAdapter = new ChatAdapter(chatMessages);
@@ -59,10 +66,33 @@ public class ChatFragment extends Fragment {
             }
         });
 
+        modelSelector.setText("Model: " + selectedModel);
+        modelSelector.setOnClickListener(v -> showModelSelectorDialog());
+
         // Add welcome message
         addWelcomeMessage();
 
         return view;
+    }
+
+    private void showModelSelectorDialog() {
+        int checkedItem = 0;
+        for (int i = 0; i < availableModels.length; i++) {
+            if (availableModels[i].equals(selectedModel)) {
+                checkedItem = i;
+                break;
+            }
+        }
+        new MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Select Model")
+            .setSingleChoiceItems(availableModels, checkedItem, (dialog, which) -> {
+                selectedModel = availableModels[which];
+                modelSelector.setText("Model: " + selectedModel);
+                dialog.dismiss();
+                // TODO: Notify parent/activity of model change if needed
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     private void addWelcomeMessage() {
