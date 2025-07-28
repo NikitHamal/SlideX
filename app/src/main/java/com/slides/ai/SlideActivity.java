@@ -63,7 +63,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 public class SlideActivity extends AppCompatActivity implements SlideRenderer.ElementSelectionListener,
-CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener {
+CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener, SlidesFragment.SlideNavigationListener {
 
 	private ViewPager2 viewPager;
 	private TabLayout tabLayout;
@@ -142,15 +142,12 @@ CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListene
 			switch (position) {
 				case 0:
 					tab.setText("Slides");
-					tab.setIcon(R.drawable.ic_slides_preview);
 					break;
 				case 1:
 					tab.setText("Chat");
-					tab.setIcon(R.drawable.ic_chat);
 					break;
 				case 2:
 					tab.setText("Code");
-					tab.setIcon(R.drawable.ic_code);
 					break;
 			}
 		}).attach();
@@ -161,9 +158,12 @@ CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListene
 			codeFragment = adapter.getCodeFragment();
 			chatFragment = adapter.getChatFragment();
 
-			// Set code interaction listener
+			// Set interaction listeners
 			if (codeFragment != null) {
 				codeFragment.setCodeInteractionListener(this);
+			}
+			if (slidesFragment != null) {
+				slidesFragment.setSlideNavigationListener(this);
 			}
 		});
 	}
@@ -179,13 +179,26 @@ CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListene
 	}
 
 	@Override
-	public void onCodeSaved(String jsonCode) {
+	public void onCodeSaved(String jsonCode, int slideIndex) {
 		try {
 			JSONObject slideData = new JSONObject(jsonCode);
 			
 			// Update the slides fragment with new data
 			if (slidesFragment != null) {
-				slidesFragment.setSlideData(slideData);
+				// Get all slides from code fragment and update slides fragment
+				if (codeFragment != null) {
+					List<String> allSlides = codeFragment.getAllSlides();
+					List<JSONObject> slideObjects = new ArrayList<>();
+					for (String slide : allSlides) {
+						try {
+							slideObjects.add(new JSONObject(slide));
+						} catch (JSONException e) {
+							// Skip invalid slides
+						}
+					}
+					slidesFragment.setSlides(slideObjects);
+					slidesFragment.navigateToSlide(slideIndex);
+				}
 			}
 			
 			// Save the slide stack if it's temporary
@@ -194,9 +207,26 @@ CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListene
 			// Switch to slides tab to show the rendered slide
 			viewPager.setCurrentItem(0);
 			
-			Toast.makeText(this, "Slide updated successfully", Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, "Slide " + (slideIndex + 1) + " updated successfully", Toast.LENGTH_SHORT).show();
 		} catch (JSONException e) {
 			Toast.makeText(this, "Invalid JSON format", Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	@Override
+	public void onSlideChanged(int slideIndex) {
+		// Sync code fragment to show the correct slide
+		if (codeFragment != null) {
+			// This will be handled by the code fragment's tab selection
+		}
+	}
+
+	@Override
+	public void onAddSlideRequested() {
+		// Switch to code tab and add a new slide
+		if (codeFragment != null) {
+			viewPager.setCurrentItem(2); // Switch to code tab
+			// The add slide functionality is handled in the code fragment
 		}
 	}
 

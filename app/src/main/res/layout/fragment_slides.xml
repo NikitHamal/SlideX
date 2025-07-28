@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -9,35 +10,72 @@
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/slide"
-        style="@style/Widget.Material3.CardView.Elevated"
         android:layout_width="320dp"
         android:layout_height="200dp"
         android:layout_gravity="center"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="8dp"
-        app:cardBackgroundColor="@color/md_theme_surface"
-        xmlns:app="http://schemas.android.com/apk/res-auto">
+        app:cardCornerRadius="8dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/md_theme_outline"
+        app:cardBackgroundColor="@color/md_theme_surface">
 
         <!-- The slide content will be added programmatically -->
 
     </com.google.android.material.card.MaterialCardView>
 
-    <TextView
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="Slide Preview"
-        android:textColor="@color/md_theme_onSurfaceVariant"
-        android:textSize="14sp"
-        android:fontFamily="sans-serif-medium" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        <!-- Left navigation button (hidden when only one slide) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_previous_slide"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="8dp"
+            android:visibility="gone"
+            app:icon="@drawable/ic_chevron_left"
+            app:iconSize="24dp"
+            app:iconTint="@color/md_theme_onSurface" />
+
+        <!-- Slide counter -->
+        <TextView
+            android:id="@+id/slide_counter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:text="1/1"
+            android:textColor="@color/md_theme_onSurfaceVariant"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium" />
+
+        <!-- Right navigation button (hidden when only one slide) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_next_slide"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:visibility="gone"
+            app:icon="@drawable/ic_chevron_right"
+            app:iconSize="24dp"
+            app:iconTint="@color/md_theme_onSurface" />
+
+    </LinearLayout>
+
+    <!-- Add slide button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_add_slide"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_marginTop="8dp"
-        android:text="Edit JSON in the Code tab to update this slide"
-        android:textColor="@color/md_theme_onSurfaceVariant"
-        android:textSize="12sp"
-        android:gravity="center" />
+        app:icon="@drawable/ic_add"
+        app:iconSize="24dp"
+        app:iconTint="@color/md_theme_primary" />
 
 </LinearLayout>

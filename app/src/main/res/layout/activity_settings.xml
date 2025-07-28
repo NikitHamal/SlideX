@@ -36,13 +36,14 @@
             <!-- Theme Section -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/themeCard"
-                style="@style/Widget.Material3.CardView.Elevated"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/md_theme_surfaceContainer">
+                app:cardCornerRadius="8dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/md_theme_outline"
+                app:cardBackgroundColor="@color/md_theme_surface">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -116,16 +117,17 @@
             <!-- Documentation Section -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/documentationCard"
-                style="@style/Widget.Material3.CardView.Elevated"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/md_theme_surfaceContainer">
+                app:cardCornerRadius="8dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/md_theme_outline"
+                app:cardBackgroundColor="@color/md_theme_surface">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -173,16 +175,17 @@
             <!-- API Keys Section -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/apiKeysCard"
-                style="@style/Widget.Material3.CardView.Elevated"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/md_theme_surfaceContainer">
+                app:cardCornerRadius="8dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/md_theme_outline"
+                app:cardBackgroundColor="@color/md_theme_surface">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -231,15 +234,16 @@
             <!-- About Section -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/aboutCard"
-                style="@style/Widget.Material3.CardView.Elevated"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:cardBackgroundColor="@color/md_theme_surfaceContainer">
+                app:cardCornerRadius="8dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/md_theme_outline"
+                app:cardBackgroundColor="@color/md_theme_surface">
 
                 <LinearLayout
                     android:layout_width="match_parent"
