@@ -160,10 +160,14 @@ public class SlideRenderer {
 		
 		float rawX = event.getX();
 		float rawY = event.getY();
-		
-		// Convert screen coordinates to slide coordinates
-		float x = (rawX - translateX) / scaleFactor;
-		float y = (rawY - translateY) / scaleFactor;
+		float canvasWidth = slideView.getWidth();
+		float canvasHeight = slideView.getHeight();
+		// Convert screen coordinates to slide coordinates (in px)
+		float xPx = (rawX - translateX) / scaleFactor;
+		float yPx = (rawY - translateY) / scaleFactor;
+		// Convert to percentage coordinates
+		float x = xPx / canvasWidth;
+		float y = yPx / canvasHeight;
 		
 		switch (event.getActionMasked()) {
 			case MotionEvent.ACTION_DOWN:
@@ -180,8 +184,8 @@ public class SlideRenderer {
 					};
 					
 					for (int i = 0; i < handles.length; i += 2) {
-						if (Math.abs(x - handles[i]) < HANDLE_EDGE_THRESHOLD / scaleFactor &&
-							Math.abs(y - handles[i + 1]) < HANDLE_EDGE_THRESHOLD / scaleFactor) {
+						if (Math.abs(xPx - handles[i]) < HANDLE_EDGE_THRESHOLD / scaleFactor &&
+							Math.abs(yPx - handles[i + 1]) < HANDLE_EDGE_THRESHOLD / scaleFactor) {
 							isResizing = true;
 							resizeHandleIndex = i / 2;
 							lastTouchX = x;
@@ -191,7 +195,7 @@ public class SlideRenderer {
 					}
 					
 					// If not touching a resize handle, check if touching the selected element for moving
-					if (selectedElement.containsPoint(x, y)) {
+					if (selectedElement.containsPoint(xPx, yPx)) {
 						isMovingElement = true;
 						lastTouchX = x;
 						lastTouchY = y;
@@ -200,7 +204,7 @@ public class SlideRenderer {
 				}
 				
 				// If not touching selected element or its handles, check for element selection
-				SlideElement tappedElement = findElementAt(x, y);
+				SlideElement tappedElement = findElementAt(xPx, yPx);
 				if (tappedElement != null) {
 					// Select the element
 					setSelectedElement(tappedElement);
@@ -219,8 +223,8 @@ public class SlideRenderer {
 			case MotionEvent.ACTION_MOVE:
 				// Handle element resizing
 				if (isResizing && selectedElement != null) {
-					float dx = (x - lastTouchX);
-					float dy = (y - lastTouchY);
+					float dxPct = (xPx - lastTouchX) / canvasWidth;
+					float dyPct = (yPx - lastTouchY) / canvasHeight;
 					
 					// Store original values for text scaling calculation
 					float originalWidth = selectedElement.width;
@@ -228,24 +232,24 @@ public class SlideRenderer {
 					
 					switch (resizeHandleIndex) {
 						case 0: // Top-left
-							selectedElement.x += dx;
-							selectedElement.y += dy;
-							selectedElement.width -= dx;
-							selectedElement.height -= dy;
+							selectedElement.x += dxPct;
+							selectedElement.y += dyPct;
+							selectedElement.width -= dxPct;
+							selectedElement.height -= dyPct;
 							break;
 						case 1: // Top-right
-							selectedElement.y += dy;
-							selectedElement.width += dx;
-							selectedElement.height -= dy;
+							selectedElement.y += dyPct;
+							selectedElement.width += dxPct;
+							selectedElement.height -= dyPct;
 							break;
 						case 2: // Bottom-left
-							selectedElement.x += dx;
-							selectedElement.width -= dx;
-							selectedElement.height += dy;
+							selectedElement.x += dxPct;
+							selectedElement.width -= dxPct;
+							selectedElement.height += dyPct;
 							break;
 						case 3: // Bottom-right
-							selectedElement.width += dx;
-							selectedElement.height += dy;
+							selectedElement.width += dxPct;
+							selectedElement.height += dyPct;
 							break;
 					}
 					
@@ -285,12 +289,12 @@ public class SlideRenderer {
 				
 				// Handle element moving
 				if (isMovingElement && selectedElement != null) {
-					float dx = (x - lastTouchX);
-					float dy = (y - lastTouchY);
+					float dxPct = (xPx - lastTouchX) / canvasWidth;
+					float dyPct = (yPx - lastTouchY) / canvasHeight;
 					
 					// Calculate total movement from initial touch
-					float totalDx = x - lastTouchX;
-					float totalDy = y - lastTouchY;
+					float totalDx = xPx - lastTouchX;
+					float totalDy = yPx - lastTouchY;
 					float totalDistance = (float) Math.sqrt(totalDx * totalDx + totalDy * totalDy);
 					
 					// If movement exceeds threshold, break the snap
@@ -300,8 +304,8 @@ public class SlideRenderer {
 						verticalGuides.clear();
 					}
 					
-					selectedElement.x += dx;
-					selectedElement.y += dy;
+					selectedElement.x += dxPct;
+					selectedElement.y += dyPct;
 					
 					// Check for alignment with other elements and show guides
 					if (showAlignmentGuides && !isSnapped) {
@@ -402,11 +406,11 @@ public class SlideRenderer {
 		}
 	}
 	
-	private SlideElement findElementAt(float x, float y) {
+	private SlideElement findElementAt(float xPx, float yPx) {
 		// Check elements in reverse order (top-most first)
 		for (int i = elements.size() - 1; i >= 0; i--) {
 			SlideElement element = elements.get(i);
-			if (element.containsPoint(x, y)) {
+			if (element.containsPoint(xPx, yPx)) {
 				return element;
 			}
 		}
@@ -560,7 +564,7 @@ public class SlideRenderer {
 			float y = (e.getY() - translateY) / scaleFactor;
 			
 			// Check if tapped on an element
-			SlideElement tappedElement = findElementAt(x, y);
+			SlideElement tappedElement = findElementAt(e.getX(), e.getY());
 			
 			// Update selection
 			if (tappedElement != null) {
