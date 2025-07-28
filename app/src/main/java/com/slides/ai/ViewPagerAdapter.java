@@ -7,8 +7,16 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 public class ViewPagerAdapter extends FragmentStateAdapter {
 
+    private SlidesFragment slidesFragment;
+    private ChatFragment chatFragment;
+    private CodeFragment codeFragment;
+    private CodeFragment.CodeInteractionListener codeInteractionListener;
+
     public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
         super(fragmentActivity);
+        slidesFragment = new SlidesFragment();
+        chatFragment = new ChatFragment();
+        codeFragment = new CodeFragment();
     }
 
     @NonNull
@@ -16,18 +24,27 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
         switch (position) {
             case 0:
-                return new SlidesFragment();
+                return slidesFragment;
             case 1:
-                return new ChatFragment();
+                return chatFragment;
             case 2:
-                return new CodeFragment();
+                codeFragment.setCodeInteractionListener(codeInteractionListener);
+                return codeFragment;
             default:
-                return new SlidesFragment();
+                return slidesFragment;
         }
     }
 
     @Override
     public int getItemCount() {
         return 3;
+    }
+
+    public SlidesFragment getSlidesFragment() {
+        return slidesFragment;
+    }
+
+    public void setCodeInteractionListener(CodeFragment.CodeInteractionListener listener) {
+        this.codeInteractionListener = listener;
     }
 }

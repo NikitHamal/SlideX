@@ -131,6 +131,17 @@ CustomizationManager.ImageSelectionCallback {
 
 		customizationManager = new CustomizationManager(this, slideRenderer);
 		customizationManager.setImageSelectionCallback(this);
+
+		// Set up the code interaction listener
+		adapter.setCodeInteractionListener(json -> {
+			try {
+				JSONObject slideJson = new JSONObject(json);
+				adapter.getSlidesFragment().setSlideData(slideJson);
+				viewPager.setCurrentItem(0); // Switch to slides tab
+			} catch (JSONException e) {
+				Toast.makeText(this, "Invalid JSON format", Toast.LENGTH_SHORT).show();
+			}
+		});
 	}
 
 
@@ -222,6 +233,9 @@ CustomizationManager.ImageSelectionCallback {
 	public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 		if (item.getItemId() == R.id.action_download) {
 			showDownloadOptionsDialog();
+			return true;
+		} else if (item.getItemId() == android.R.id.home) {
+			finish();
 			return true;
 		}
 		return super.onOptionsItemSelected(item);

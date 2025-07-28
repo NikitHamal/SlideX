@@ -155,6 +155,7 @@
                 android:id="@+id/apiKeysCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp"
                 android:clickable="true"
                 android:focusable="true"
@@ -195,13 +196,6 @@
                             android:textSize="14sp" />
 
                     </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center_vertical"
-                        android:src="@drawable/ic_chevron_right"
-                        android:tint="@color/md_theme_onSurfaceVariant" />
 
                 </LinearLayout>
 
@@ -250,13 +244,6 @@
                             android:textSize="14sp" />
 
                     </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_gravity="center_vertical"
-                        android:src="@drawable/ic_chevron_right"
-                        android:tint="@color/md_theme_onSurfaceVariant" />
 
                 </LinearLayout>
 
