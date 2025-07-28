@@ -13,6 +13,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,7 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class SlidesFragment extends Fragment implements SlideRenderer.ElementSelectionListener {
+public class SlidesFragment extends Fragment implements SlideRenderer.ElementSelectionListener, CustomizationManager.ImageSelectionCallback {
 
     private MaterialCardView slide;
     private CustomView slideView;
@@ -144,10 +145,7 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
         
         // Initialize customization manager
         customizationManager = new CustomizationManager(getContext(), slideRenderer);
-        customizationManager.setImageSelectionCallback(element -> {
-            // Handle image selection - you can implement image picker here
-            // For now, we'll just show a placeholder
-        });
+        customizationManager.setImageSelectionCallback(this);
     }
 
     private void setupCustomizationToolbar() {
@@ -246,8 +244,8 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
 
         // Replace image listener
         btnReplaceImage.setOnClickListener(v -> {
-            if (selectedElement instanceof ImageElement && customizationManager != null) {
-                customizationManager.onImageSelectionRequested(selectedElement);
+            if (selectedElement instanceof ImageElement) {
+                onImageSelectionRequested(selectedElement);
             }
         });
     }
@@ -471,5 +469,12 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
         public boolean onTouchEvent(MotionEvent event) {
             return slideRenderer != null && slideRenderer.handleTouchEvent(event);
         }
+    }
+
+    @Override
+    public void onImageSelectionRequested(SlideElement element) {
+        // Handle image selection - for now, we'll show a placeholder
+        // You can implement image picker here in the future
+        Toast.makeText(getContext(), "Image selection feature coming soon", Toast.LENGTH_SHORT).show();
     }
 }
