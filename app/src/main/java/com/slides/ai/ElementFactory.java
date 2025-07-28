@@ -48,17 +48,18 @@ public class ElementFactory {
 					element.optInt("x", 0) + "," + element.optInt("y", 0) + ")");
 
 				try {
+					SlideElement newElement = null;
 					switch (type.toLowerCase()) {
 						case "text":
-							elements.add(new TextElement(element, context));
+							newElement = new TextElement(element, context);
 							Log.i("ElementFactory", "Successfully created TextElement: " + element.optString("content", ""));
 							break;
 						case "image":
-							elements.add(new ImageElement(element, context));
+							newElement = new ImageElement(element, context);
 							Log.i("ElementFactory", "Successfully created ImageElement");
 							break;
 						case "shape":
-							elements.add(new ShapeElement(element, context));
+							newElement = new ShapeElement(element, context);
 							Log.i("ElementFactory", "Successfully created ShapeElement: " + element.optString("shapeType", ""));
 							break;
 						// Handle Qwen format - convert rectangle to shape
@@ -68,7 +69,7 @@ public class ElementFactory {
 							if (element.optInt("height", 0) < 2) {
 								element.put("height", 2);
 							}
-							elements.add(new ShapeElement(element, context));
+							newElement = new ShapeElement(element, context);
 							Log.i("ElementFactory", "Successfully created ShapeElement from rectangle");
 							break;
 						// Handle Qwen format - convert oval to shape
@@ -81,47 +82,53 @@ public class ElementFactory {
 							if (element.optInt("height", 0) < 2) {
 								element.put("height", 2);
 							}
-							elements.add(new ShapeElement(element, context));
+							newElement = new ShapeElement(element, context);
 							Log.i("ElementFactory", "Successfully created ShapeElement from oval");
 							break;
 						case "circle":
 							element.put("type", "shape");
 							element.put("shapeType", "oval");
-							elements.add(new ShapeElement(element, context));
+							newElement = new ShapeElement(element, context);
 							Log.i("ElementFactory", "Successfully created ShapeElement from circle");
 							break;
 						case "line":
 							element.put("type", "shape");
 							element.put("shapeType", "line");
-							elements.add(new ShapeElement(element, context));
+							newElement = new ShapeElement(element, context);
 							Log.i("ElementFactory", "Successfully created ShapeElement from line");
 							break;
 						case "triangle":
 							element.put("type", "shape");
 							element.put("shapeType", "triangle");
-							elements.add(new ShapeElement(element, context));
+							newElement = new ShapeElement(element, context);
 							Log.i("ElementFactory", "Successfully created ShapeElement from triangle");
 							break;
 						case "table":
-							elements.add(new TableElement(element, context));
+							newElement = new TableElement(element, context);
 							Log.i("ElementFactory", "Successfully created TableElement");
 							break;
 						case "chart":
-							elements.add(new ChartElement(element, context));
+							newElement = new ChartElement(element, context);
 							Log.i("ElementFactory", "Successfully created ChartElement");
 							break;
 						case "icon":
-							elements.add(new IconElement(element, context));
+							newElement = new IconElement(element, context);
 							Log.i("ElementFactory", "Successfully created IconElement");
 							break;
 						default:
 							Log.w("ElementFactory", "Unknown element type: " + type + ". Creating a fallback error element.");
-							elements.add(createErrorTextElement(context, "Unknown type: " + type));
+							newElement = createErrorTextElement(context, "Unknown type: " + type);
 							break;
+					}
+					if (newElement != null) {
+						elements.add(newElement);
 					}
 				} catch (Exception e) {
 					Log.e("ElementFactory", "Error creating element of type " + type, e);
-					elements.add(createErrorTextElement(context, "Error parsing " + type));
+					SlideElement errorElement = createErrorTextElement(context, "Error parsing " + type);
+					if (errorElement != null) {
+						elements.add(errorElement);
+					}
 				}
 			}
 		} catch (Exception e) {
