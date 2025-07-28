@@ -319,6 +319,9 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
         }
 
         customizationToolbar.setVisibility(View.VISIBLE);
+        setupPositionSizeSliders(selectedElement);
+        setupOpacitySlider(selectedElement);
+        setupZOrderControls(selectedElement);
     }
 
     private void setupTextElementUI(TextElement element) {
@@ -373,6 +376,61 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
         
         // Set opacity - ensure value is compatible with stepSize (0-100)
         sliderOpacity.setValue(Math.round(element.opacity * 100));
+    }
+
+    private void setupPositionSizeSliders(SlideElement element) {
+        Slider xSlider = customizationToolbar.findViewById(R.id.slider_x);
+        Slider ySlider = customizationToolbar.findViewById(R.id.slider_y);
+        Slider widthSlider = customizationToolbar.findViewById(R.id.slider_width);
+        Slider heightSlider = customizationToolbar.findViewById(R.id.slider_height);
+        TextView xLabel = customizationToolbar.findViewById(R.id.label_x);
+        TextView yLabel = customizationToolbar.findViewById(R.id.label_y);
+        TextView widthLabel = customizationToolbar.findViewById(R.id.label_width);
+        TextView heightLabel = customizationToolbar.findViewById(R.id.label_height);
+        xSlider.setValue(element.x);
+        ySlider.setValue(element.y);
+        widthSlider.setValue(element.width);
+        heightSlider.setValue(element.height);
+        xLabel.setText(String.format("%.0f%%", element.x * 100));
+        yLabel.setText(String.format("%.0f%%", element.y * 100));
+        widthLabel.setText(String.format("%.0f%%", element.width * 100));
+        heightLabel.setText(String.format("%.0f%%", element.height * 100));
+        xSlider.addOnChangeListener((slider, value, fromUser) -> { element.x = value; xLabel.setText(String.format("%.0f%%", value * 100)); slideView.invalidate(); });
+        ySlider.addOnChangeListener((slider, value, fromUser) -> { element.y = value; yLabel.setText(String.format("%.0f%%", value * 100)); slideView.invalidate(); });
+        widthSlider.addOnChangeListener((slider, value, fromUser) -> { element.width = value; widthLabel.setText(String.format("%.0f%%", value * 100)); slideView.invalidate(); });
+        heightSlider.addOnChangeListener((slider, value, fromUser) -> { element.height = value; heightLabel.setText(String.format("%.0f%%", value * 100)); slideView.invalidate(); });
+    }
+    private void setupOpacitySlider(SlideElement element) {
+        Slider opacitySlider = customizationToolbar.findViewById(R.id.slider_opacity);
+        if (element instanceof TextElement) {
+            opacitySlider.setValue(1.0f); // Not implemented for text, but can be added
+        } else if (element instanceof ImageElement) {
+            opacitySlider.setValue(1.0f); // Not implemented for image, but can be added
+        } else if (element instanceof ShapeElement) {
+            opacitySlider.setValue(((ShapeElement) element).opacity);
+            opacitySlider.addOnChangeListener((slider, value, fromUser) -> {
+                ((ShapeElement) element).opacity = value;
+                slideView.invalidate();
+            });
+        }
+    }
+    private void setupZOrderControls(SlideElement element) {
+        MaterialButton btnBringForward = customizationToolbar.findViewById(R.id.btn_bring_forward);
+        MaterialButton btnSendBackward = customizationToolbar.findViewById(R.id.btn_send_backward);
+        btnBringForward.setOnClickListener(v -> {
+            // Move element up in the elements list
+            if (slideRenderer != null) {
+                slideRenderer.bringElementForward(element);
+                slideView.invalidate();
+            }
+        });
+        btnSendBackward.setOnClickListener(v -> {
+            // Move element down in the elements list
+            if (slideRenderer != null) {
+                slideRenderer.sendElementBackward(element);
+                slideView.invalidate();
+            }
+        });
     }
 
     private void hideCustomizationToolbar() {

@@ -838,4 +838,19 @@ public class SlideRenderer {
 		
 		return String.join(", ", alignments);
 	}
+
+	public void bringElementForward(SlideElement element) {
+		int idx = elements.indexOf(element);
+		if (idx >= 0 && idx < elements.size() - 1) {
+			elements.remove(idx);
+			elements.add(idx + 1, element);
+		}
+	}
+	public void sendElementBackward(SlideElement element) {
+		int idx = elements.indexOf(element);
+		if (idx > 0) {
+			elements.remove(idx);
+			elements.add(idx - 1, element);
+		}
+	}
 }
