@@ -14,6 +14,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import android.provider.MediaStore;
+import java.io.IOException;
+
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -247,9 +253,32 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
         // Replace image listener
         btnReplaceImage.setOnClickListener(v -> {
             if (selectedElement instanceof ImageElement) {
-                onImageSelectionRequested(selectedElement);
+                openImagePicker();
             }
         });
+    }
+
+    private void openImagePicker() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        startActivityForResult(intent, 1001);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1001 && resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
+            Uri imageUri = data.getData();
+            if (selectedElement instanceof ImageElement) {
+                try {
+                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContext().getContentResolver(), imageUri);
+                    ((ImageElement) selectedElement).setBitmap(bitmap);
+                    slideView.invalidate();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     private void setupShapeCustomizationListeners() {

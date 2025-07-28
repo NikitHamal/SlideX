@@ -93,6 +93,8 @@ public class CustomizationManager {
 		} else if (element instanceof IconElement) {
 			setupIconCustomization(dialogView, (IconElement) element);
 		}
+
+		setupArrangeSection(dialogView, element);
 		
 		return dialogView;
 	}
@@ -229,6 +231,12 @@ public class CustomizationManager {
 			imageElement.updatePath();
 			slideRenderer.slideView.invalidate();
 		});
+
+		SwitchMaterial lockAspectRatioSwitch = dialogView.findViewById(R.id.switch_lock_aspect_ratio);
+		lockAspectRatioSwitch.setChecked(imageElement.lockAspectRatio);
+		lockAspectRatioSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			imageElement.lockAspectRatio = isChecked;
+		});
 	}
 	
 	// ================== SHAPE ELEMENT ==================
@@ -308,6 +316,12 @@ public class CustomizationManager {
 		strokeWidthSlider.addOnChangeListener((slider, value, fromUser) -> {
 			shapeElement.strokeWidth = dpToPx(value);
 			slideRenderer.slideView.invalidate();
+		});
+
+		SwitchMaterial lockAspectRatioSwitch = dialogView.findViewById(R.id.switch_shape_lock_aspect_ratio);
+		lockAspectRatioSwitch.setChecked(shapeElement.lockAspectRatio);
+		lockAspectRatioSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			shapeElement.lockAspectRatio = isChecked;
 		});
 	}
 	
@@ -397,31 +411,57 @@ public class CustomizationManager {
 	private void setupIconCustomization(View dialogView, IconElement iconElement) {
 		View section = dialogView.findViewById(R.id.icon_customization);
 		section.setVisibility(View.VISIBLE);
-		
+
 		AutoCompleteTextView iconSelector = dialogView.findViewById(R.id.icon_selector);
 		MaterialButton colorButton = dialogView.findViewById(R.id.btn_icon_color);
-		
+
 		// Setup icon dropdown
 		String[] icons = {"home", "settings", "pie_chart", "bar_chart", "image", "text_fields"};
 		ArrayAdapter<String> adapter = new ArrayAdapter<>(
-		context, android.R.layout.simple_dropdown_item_1line, icons);
+				context, android.R.layout.simple_dropdown_item_1line, icons);
 		iconSelector.setAdapter(adapter);
 		iconSelector.setText(iconElement.getIconName(), false);
-		
+
 		// Set initial color
 		colorButton.setBackgroundTintList(ColorStateList.valueOf(iconElement.getColor()));
-		
+
 		// Set up listeners
 		iconSelector.setOnItemClickListener((parent, view, position, id) -> {
 			iconElement.setIconName(icons[position]);
 			slideRenderer.slideView.invalidate();
 		});
-		
+
 		colorButton.setOnClickListener(v -> showColorPickerDialog(color -> {
 			iconElement.setColor(color);
 			colorButton.setBackgroundTintList(ColorStateList.valueOf(color));
 			slideRenderer.slideView.invalidate();
 		}));
+	}
+
+	private void setupArrangeSection(View dialogView, SlideElement element) {
+		View section = dialogView.findViewById(R.id.arrange_section);
+		section.setVisibility(View.VISIBLE);
+
+		Slider rotationSlider = dialogView.findViewById(R.id.slider_rotation);
+		MaterialButton bringToFrontButton = dialogView.findViewById(R.id.btn_bring_to_front);
+		MaterialButton sendToBackButton = dialogView.findViewById(R.id.btn_send_to_back);
+
+		rotationSlider.setValue(element.rotation);
+
+		rotationSlider.addOnChangeListener((slider, value, fromUser) -> {
+			element.rotation = value;
+			slideRenderer.slideView.invalidate();
+		});
+
+		bringToFrontButton.setOnClickListener(v -> {
+			slideRenderer.bringToFront(element);
+			slideRenderer.slideView.invalidate();
+		});
+
+		sendToBackButton.setOnClickListener(v -> {
+			slideRenderer.sendToBack(element);
+			slideRenderer.slideView.invalidate();
+		});
 	}
 	
 	private void copyElementToClipboard(SlideElement element) {

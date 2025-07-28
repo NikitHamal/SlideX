@@ -95,7 +95,7 @@ public class QwenManager {
         });
     }
 
-    public void getCompletion(String chatId, String parentId, String prompt, String model, QwenCallback<String> callback) {
+    public void getCompletion(String chatId, String parentId, String prompt, String model, float canvasWidth, float canvasHeight, QwenCallback<String> callback) {
         executorService.execute(() -> {
             try {
                 // Get API key from manager
@@ -107,7 +107,7 @@ public class QwenManager {
 
                 // Use stored chat ID if available, otherwise use provided one
                 String activeChatId = currentChatId != null ? currentChatId : chatId;
-                
+
                 URL url = new URL(COMPLETION_URL + activeChatId);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
@@ -128,7 +128,7 @@ public class QwenManager {
                 request.messages.addAll(conversationHistory);
 
                 // Create enhanced prompt for slide generation
-                String enhancedPrompt = createSlideGenerationPrompt(prompt);
+                String enhancedPrompt = createSlideGenerationPrompt(prompt, canvasWidth, canvasHeight);
 
                 QwenCompletionRequest.Message message = new QwenCompletionRequest.Message();
                 message.role = "user";
@@ -230,8 +230,9 @@ public class QwenManager {
         });
     }
     
-    private String createSlideGenerationPrompt(String userPrompt) {
+    private String createSlideGenerationPrompt(String userPrompt, float canvasWidth, float canvasHeight) {
         return "Create a professional presentation slide based on this request: \"" + userPrompt + "\". " +
+                "The canvas size is " + canvasWidth + "x" + canvasHeight + " pixels. Please generate the slide elements accordingly." +
                "You must respond with ONLY a valid JSON object (no markdown, no explanation) that contains:\n" +
                "{\n" +
                "  \"backgroundColor\": \"#FFFFFF\",\n" +
@@ -251,7 +252,7 @@ public class QwenManager {
                "  ]\n" +
                "}\n" +
                "Guidelines:\n" +
-               "- Use slide dimensions 320x200dp\n" +
+                "- Use slide dimensions " + canvasWidth + "x" + canvasHeight + "dp\n" +
                "- Position elements with proper spacing\n" +
                "- Include title, content, and optionally images/shapes\n" +
                "- Use readable fonts (fontSize 12-24)\n" +

@@ -37,7 +37,7 @@ public class ChatFragment extends Fragment {
     private ChatInteractionListener chatInteractionListener;
 
     public interface ChatInteractionListener {
-        void onChatPromptSent(String prompt);
+        void onChatPromptSent(String prompt, float canvasWidth, float canvasHeight);
     }
 
     public void setChatInteractionListener(ChatInteractionListener listener) {
@@ -85,13 +85,17 @@ public class ChatFragment extends Fragment {
     private void sendMessage(String message) {
         // Add user message to chat
         addUserMessage(message);
-        
+
         // Show typing indicator
         addAiMessage("Creating your slide...");
-        
+
         // Send to parent activity for processing
         if (chatInteractionListener != null) {
-            chatInteractionListener.onChatPromptSent(message);
+            // This is a simplified way to get canvas dimensions.
+            // In a real app, you might have a more robust way to get this from the SlidesFragment.
+            float canvasWidth = 320; // Example value
+            float canvasHeight = 200; // Example value
+            chatInteractionListener.onChatPromptSent(message, canvasWidth, canvasHeight);
         }
     }
 

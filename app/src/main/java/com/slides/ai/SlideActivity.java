@@ -283,13 +283,13 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	}
 
 	@Override
-	public void onChatPromptSent(String prompt) {
+	public void onChatPromptSent(String prompt, float canvasWidth, float canvasHeight) {
         ensureFragmentReferences();
         String selectedModel = chatFragment.getSelectedModel();
 
 		if (selectedModel.startsWith("gemini")) {
             if (networkManager != null) {
-                networkManager.sendPromptToGemini(prompt, new NetworkManager.ApiResponseCallback() {
+                networkManager.sendPromptToGemini(prompt, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new NetworkManager.ApiResponseCallback() {
                     @Override
                     public void onSuccess(String jsonStr) {
                         handleSuccessfulResponse(jsonStr);
@@ -303,7 +303,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
             } else {
                 handleErrorResponse("Network manager not available.");
             }
-        } else if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq")) {
+        } else if (selectedModel.startsWith("qwen") || selected.startsWith("qwq")) {
             if (qwenManager != null) {
                 // Check if we have a Qwen token first
                 String qwenToken = apiKeyManager.getQwenToken();
@@ -316,7 +316,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
                     @Override
                     public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
                         if (response != null && response.success && response.data != null) {
-                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, new QwenManager.QwenCallback<String>() {
+                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new QwenManager.QwenCallback<String>() {
                                 @Override
                                 public void onSuccess(String jsonResponse) {
                                     try {

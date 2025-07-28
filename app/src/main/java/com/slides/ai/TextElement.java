@@ -122,6 +122,7 @@ public class TextElement extends SlideElement {
 	public void draw(Canvas canvas) {
 		canvas.save();
 		canvas.translate(x, y);
+		canvas.rotate(rotation, width / 2, height / 2);
 		textLayout.draw(canvas);
 		canvas.restore();
 	}

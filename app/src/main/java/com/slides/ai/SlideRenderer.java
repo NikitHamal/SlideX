@@ -129,6 +129,14 @@ public class SlideRenderer {
 		transformMatrix.reset();
 		slideView.invalidate();
 	}
+
+	public float getCanvasWidth() {
+		return slideView.getWidth();
+	}
+
+	public float getCanvasHeight() {
+		return slideView.getHeight();
+	}
 	
 	private void parseSlideData() {
 		try {
@@ -219,13 +227,25 @@ public class SlideRenderer {
 			case MotionEvent.ACTION_MOVE:
 				// Handle element resizing
 				if (isResizing && selectedElement != null) {
-					float dx = (x - lastTouchX);
-					float dy = (y - lastTouchY);
-					
+					float dx = x - lastTouchX;
+					float dy = y - lastTouchY;
+
+					if (selectedElement.lockAspectRatio) {
+						float originalWidth = selectedElement.width;
+						float originalHeight = selectedElement.height;
+						float aspectRatio = originalWidth / originalHeight;
+
+						if (Math.abs(dx) > Math.abs(dy)) {
+							dy = dx / aspectRatio;
+						} else {
+							dx = dy * aspectRatio;
+						}
+					}
+
 					// Store original values for text scaling calculation
 					float originalWidth = selectedElement.width;
 					float originalHeight = selectedElement.height;
-					
+
 					switch (resizeHandleIndex) {
 						case 0: // Top-left
 							selectedElement.x += dx;
@@ -429,52 +449,24 @@ public class SlideRenderer {
 		
 		// Draw selection overlay for selected element
 		if (selectedElement != null) {
-			// Modern selection with shadow and glow effect
 			RectF elementRect = new RectF(
-				selectedElement.x,
-				selectedElement.y,
-				selectedElement.x + selectedElement.width,
-				selectedElement.y + selectedElement.height
+					selectedElement.x,
+					selectedElement.y,
+					selectedElement.x + selectedElement.width,
+					selectedElement.y + selectedElement.height
 			);
-			
-			// Draw shadow/glow effect around selected element
-			Paint shadowPaint = new Paint();
-			shadowPaint.setColor(Color.parseColor("#4D2196F3")); // Semi-transparent blue
-			shadowPaint.setStyle(Paint.Style.FILL);
-			shadowPaint.setMaskFilter(new BlurMaskFilter(dpToPx(8) / scaleFactor, BlurMaskFilter.Blur.OUTER));
-			
-			RectF shadowRect = new RectF(
-				elementRect.left - dpToPx(4) / scaleFactor,
-				elementRect.top - dpToPx(4) / scaleFactor,
-				elementRect.right + dpToPx(4) / scaleFactor,
-				elementRect.bottom + dpToPx(4) / scaleFactor
-			);
-			canvas.drawRect(shadowRect, shadowPaint);
-			
-			// Draw modern selection border with rounded corners
+
 			Paint selectionPaint = new Paint();
 			selectionPaint.setStyle(Paint.Style.STROKE);
-			selectionPaint.setColor(Color.parseColor("#2196F3")); // Material Blue
+			selectionPaint.setColor(ContextCompat.getColor(context, R.color.md_theme_primary));
 			selectionPaint.setStrokeWidth(dpToPx(2) / scaleFactor);
 			selectionPaint.setAntiAlias(true);
-			
-			RectF selectionRect = new RectF(
-				elementRect.left - dpToPx(1) / scaleFactor,
-				elementRect.top - dpToPx(1) / scaleFactor,
-				elementRect.right + dpToPx(1) / scaleFactor,
-				elementRect.bottom + dpToPx(1) / scaleFactor
-			);
-			
-			float cornerRadius = dpToPx(4) / scaleFactor;
-			canvas.drawRoundRect(selectionRect, cornerRadius, cornerRadius, selectionPaint);
-			
-			// Draw modern resize handles with better design
+
+			canvas.drawRect(elementRect, selectionPaint);
+
 			drawModernResizeHandles(canvas, elementRect);
-			
-			// Draw rotation handle for improved UX
-			drawRotationHandle(canvas, elementRect);
 		}
-		
+
 		// Draw modern alignment guides
 		if (showAlignmentGuides && (isMovingElement || isResizing) && (!horizontalGuides.isEmpty() || !verticalGuides.isEmpty())) {
 			drawModernAlignmentGuides(canvas);
@@ -580,183 +572,51 @@ public class SlideRenderer {
 	 * Draw modern, Material Design-inspired resize handles
 	 */
 	private void drawModernResizeHandles(Canvas canvas, RectF elementRect) {
-		float handleSize = dpToPx(10) / scaleFactor;
-		float handleStroke = dpToPx(2) / scaleFactor;
-		
-		// Handle positions: corners and mid-points for better control
-		float[][] handlePositions = {
-			{elementRect.left, elementRect.top}, // Top-left
-			{elementRect.centerX(), elementRect.top}, // Top-center
-			{elementRect.right, elementRect.top}, // Top-right
-			{elementRect.right, elementRect.centerY()}, // Right-center
-			{elementRect.right, elementRect.bottom}, // Bottom-right
-			{elementRect.centerX(), elementRect.bottom}, // Bottom-center
-			{elementRect.left, elementRect.bottom}, // Bottom-left
-			{elementRect.left, elementRect.centerY()} // Left-center
-		};
-		
-		for (int i = 0; i < handlePositions.length; i++) {
-			float x = handlePositions[i][0];
-			float y = handlePositions[i][1];
-			
-			// Draw handle shadow
-			Paint shadowPaint = new Paint();
-			shadowPaint.setColor(Color.parseColor("#40000000"));
-			shadowPaint.setStyle(Paint.Style.FILL);
-			shadowPaint.setAntiAlias(true);
-			canvas.drawCircle(x + dpToPx(1) / scaleFactor, y + dpToPx(1) / scaleFactor, 
-							  handleSize / 2 + handleStroke, shadowPaint);
-			
-			// Draw handle background
-			Paint handleBgPaint = new Paint();
-			handleBgPaint.setColor(Color.WHITE);
-			handleBgPaint.setStyle(Paint.Style.FILL);
-			handleBgPaint.setAntiAlias(true);
-			canvas.drawCircle(x, y, handleSize / 2 + handleStroke, handleBgPaint);
-			
-			// Draw handle border  
-			Paint handleBorderPaint = new Paint();
-			handleBorderPaint.setColor(Color.parseColor("#2196F3"));
-			handleBorderPaint.setStyle(Paint.Style.STROKE);
-			handleBorderPaint.setStrokeWidth(handleStroke);
-			handleBorderPaint.setAntiAlias(true);
-			canvas.drawCircle(x, y, handleSize / 2, handleBorderPaint);
-			
-			// Draw handle icon based on position
-			drawHandleIcon(canvas, x, y, i, handleSize);
-		}
-	}
-	
-	/**
-	 * Draw icons inside resize handles for better UX
-	 */
-	private void drawHandleIcon(Canvas canvas, float x, float y, int handleIndex, float handleSize) {
-		Paint iconPaint = new Paint();
-		iconPaint.setColor(Color.parseColor("#2196F3"));
-		iconPaint.setStyle(Paint.Style.STROKE);
-		iconPaint.setStrokeWidth(dpToPx(1.5f) / scaleFactor);
-		iconPaint.setAntiAlias(true);
-		iconPaint.setStrokeCap(Paint.Cap.ROUND);
-		
-		float iconRadius = handleSize / 4;
-		
-		switch (handleIndex) {
-			case 0: case 4: // Corner handles - diagonal resize icon
-				canvas.drawLine(x - iconRadius, y - iconRadius, x + iconRadius, y + iconRadius, iconPaint);
-				canvas.drawLine(x - iconRadius, y + iconRadius, x + iconRadius, y - iconRadius, iconPaint);
-				break;
-			case 1: case 5: // Top/bottom handles - vertical resize icon
-				canvas.drawLine(x, y - iconRadius, x, y + iconRadius, iconPaint);
-				canvas.drawLine(x - iconRadius/2, y - iconRadius/2, x + iconRadius/2, y - iconRadius/2, iconPaint);
-				canvas.drawLine(x - iconRadius/2, y + iconRadius/2, x + iconRadius/2, y + iconRadius/2, iconPaint);
-				break;
-			case 2: case 6: // Corner handles - diagonal resize icon  
-				canvas.drawLine(x - iconRadius, y - iconRadius, x + iconRadius, y + iconRadius, iconPaint);
-				canvas.drawLine(x - iconRadius, y + iconRadius, x + iconRadius, y - iconRadius, iconPaint);
-				break;
-			case 3: case 7: // Left/right handles - horizontal resize icon
-				canvas.drawLine(x - iconRadius, y, x + iconRadius, y, iconPaint);
-				canvas.drawLine(x - iconRadius/2, y - iconRadius/2, x - iconRadius/2, y + iconRadius/2, iconPaint);
-				canvas.drawLine(x + iconRadius/2, y - iconRadius/2, x + iconRadius/2, y + iconRadius/2, iconPaint);
-				break;
-		}
-	}
-	
-	/**
-	 * Draw rotation handle for advanced element manipulation
-	 */
-	private void drawRotationHandle(Canvas canvas, RectF elementRect) {
-		float handleDistance = dpToPx(30) / scaleFactor;
-		float rotationX = elementRect.centerX();
-		float rotationY = elementRect.top - handleDistance;
-		float handleSize = dpToPx(12) / scaleFactor;
-		
-		// Draw connection line
-		Paint linePaint = new Paint();
-		linePaint.setColor(Color.parseColor("#2196F3"));
-		linePaint.setStrokeWidth(dpToPx(1.5f) / scaleFactor);
-		linePaint.setAntiAlias(true);
-		canvas.drawLine(elementRect.centerX(), elementRect.top, rotationX, rotationY, linePaint);
-		
-		// Draw rotation handle
+		float handleRadius = dpToPx(6) / scaleFactor;
 		Paint handlePaint = new Paint();
-		handlePaint.setColor(Color.WHITE);
 		handlePaint.setStyle(Paint.Style.FILL);
+		handlePaint.setColor(Color.WHITE);
 		handlePaint.setAntiAlias(true);
-		canvas.drawCircle(rotationX, rotationY, handleSize / 2, handlePaint);
-		
-		Paint borderPaint = new Paint();
-		borderPaint.setColor(Color.parseColor("#2196F3"));
-		borderPaint.setStyle(Paint.Style.STROKE);
-		borderPaint.setStrokeWidth(dpToPx(2) / scaleFactor);
-		borderPaint.setAntiAlias(true);
-		canvas.drawCircle(rotationX, rotationY, handleSize / 2, borderPaint);
-		
-		// Draw rotation icon
-		drawRotationIcon(canvas, rotationX, rotationY, handleSize);
-	}
-	
-	/**
-	 * Draw rotation icon inside the rotation handle
-	 */
-	private void drawRotationIcon(Canvas canvas, float x, float y, float handleSize) {
-		Paint iconPaint = new Paint();
-		iconPaint.setColor(Color.parseColor("#2196F3"));
-		iconPaint.setStyle(Paint.Style.STROKE);
-		iconPaint.setStrokeWidth(dpToPx(1.5f) / scaleFactor);
-		iconPaint.setAntiAlias(true);
-		iconPaint.setStrokeCap(Paint.Cap.ROUND);
-		
-		float radius = handleSize / 3;
-		
-		// Draw circular arrow
-		RectF arcRect = new RectF(x - radius, y - radius, x + radius, y + radius);
-		canvas.drawArc(arcRect, -90, 270, false, iconPaint);
-		
-		// Draw arrow head
-		float arrowX = x + radius;
-		float arrowY = y;
-		float arrowSize = radius / 3;
-		canvas.drawLine(arrowX, arrowY, arrowX - arrowSize, arrowY - arrowSize, iconPaint);
-		canvas.drawLine(arrowX, arrowY, arrowX - arrowSize, arrowY + arrowSize, iconPaint);
+
+		Paint handleBorderPaint = new Paint();
+		handleBorderPaint.setStyle(Paint.Style.STROKE);
+		handleBorderPaint.setColor(ContextCompat.getColor(context, R.color.md_theme_primary));
+		handleBorderPaint.setStrokeWidth(dpToPx(2) / scaleFactor);
+		handleBorderPaint.setAntiAlias(true);
+
+		float[] handlePositions = {
+				elementRect.left, elementRect.top,
+				elementRect.right, elementRect.top,
+				elementRect.left, elementRect.bottom,
+				elementRect.right, elementRect.bottom
+		};
+
+		for (int i = 0; i < handlePositions.length; i += 2) {
+			float x = handlePositions[i];
+			float y = handlePositions[i+1];
+			canvas.drawCircle(x, y, handleRadius, handlePaint);
+			canvas.drawCircle(x, y, handleRadius, handleBorderPaint);
+		}
 	}
 	
 	/**
 	 * Draw modern alignment guides with better visual design
 	 */
 	private void drawModernAlignmentGuides(Canvas canvas) {
-		// Create guide paint with modern styling
 		Paint guidePaint = new Paint();
-		guidePaint.setColor(Color.parseColor("#FF4081")); // Material Pink for contrast
-		guidePaint.setStrokeWidth(dpToPx(1.5f) / scaleFactor);
+		guidePaint.setColor(ContextCompat.getColor(context, R.color.md_theme_primary));
+		guidePaint.setStrokeWidth(dpToPx(1) / scaleFactor);
 		guidePaint.setStyle(Paint.Style.STROKE);
 		guidePaint.setAntiAlias(true);
-		
-		// Create animation effect for guides
-		long currentTime = System.currentTimeMillis();
-		float phase = (currentTime % 1000) / 1000f * dpToPx(8) / scaleFactor;
-		guidePaint.setPathEffect(new DashPathEffect(new float[] {
-			dpToPx(6) / scaleFactor, dpToPx(4) / scaleFactor
-		}, phase));
-		
-		// Draw horizontal guides with fade effect at edges
+		guidePaint.setPathEffect(new DashPathEffect(new float[]{10, 10}, 0));
+
 		for (Float y : horizontalGuides) {
-			// Draw full guide line
 			canvas.drawLine(0, y, canvas.getWidth(), y, guidePaint);
-			
-			// Draw emphasis dots at intersections
-			for (Float verticalX : verticalGuides) {
-				drawGuideIntersection(canvas, verticalX, y);
-			}
 		}
-		
-		// Draw vertical guides
+
 		for (Float x : verticalGuides) {
 			canvas.drawLine(x, 0, x, canvas.getHeight(), guidePaint);
 		}
-		
-		// Draw guide labels for better understanding
-		drawGuideLabels(canvas);
 	}
 	
 	/**
@@ -826,7 +686,7 @@ public class SlideRenderer {
 		if (horizontalGuides.isEmpty() && verticalGuides.isEmpty()) {
 			return "";
 		}
-		
+
 		List<String> alignments = new ArrayList<>();
 		if (!horizontalGuides.isEmpty()) {
 			alignments.add("H-Aligned");
@@ -834,7 +694,17 @@ public class SlideRenderer {
 		if (!verticalGuides.isEmpty()) {
 			alignments.add("V-Aligned");
 		}
-		
+
 		return String.join(", ", alignments);
+	}
+
+	public void bringToFront(SlideElement element) {
+		elements.remove(element);
+		elements.add(element);
+	}
+
+	public void sendToBack(SlideElement element) {
+		elements.remove(element);
+		elements.add(0, element);
 	}
 }

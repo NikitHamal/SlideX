@@ -26,94 +26,131 @@ public class ElementFactory {
 	* @param context The application context
 	* @return List of SlideElement objects
 	*/
-	public static List<SlideElement> createElementsFromJSON(JSONObject slideData, Context context, HashMap<String, Bitmap> imageCache) {	
+	public static List<SlideElement> createElementsFromJSON(JSONObject slideData, Context context, HashMap<String, Bitmap> imageCache) {
 		List<SlideElement> elements = new ArrayList<>();
-		
+		Log.d("ElementFactory", "Starting JSON parsing. Data: " + slideData.toString());
+
 		try {
+			if (!slideData.has("elements")) {
+				Log.e("ElementFactory", "JSON data does not contain 'elements' array.");
+				return elements;
+			}
 			// Parse elements
 			JSONArray jsonElements = slideData.getJSONArray("elements");
+			Log.d("ElementFactory", "Found " + jsonElements.length() + " elements in JSON.");
+
 			for (int i = 0; i < jsonElements.length(); i++) {
 				JSONObject element = jsonElements.getJSONObject(i);
-				String type = element.getString("type");
-				
-				Log.d("ElementFactory", "Creating element type: " + type + " at position (" + 
-					  element.optInt("x", 0) + "," + element.optInt("y", 0) + ")");
-				
-				switch (type.toLowerCase()) {
-					case "text":
-						elements.add(new TextElement(element, context));
-						Log.d("ElementFactory", "Created TextElement: " + element.optString("content", ""));
-						break;
-					case "image":
-						elements.add(new ImageElement(element, context));
-						Log.d("ElementFactory", "Created ImageElement");
-						break;
-					case "shape":
-						elements.add(new ShapeElement(element, context));
-						Log.d("ElementFactory", "Created ShapeElement: " + element.optString("shapeType", ""));
-						break;
-					// Handle Qwen format - convert rectangle to shape
-					case "rectangle":
-						element.put("type", "shape");
-						element.put("shapeType", "rectangle");
-						// Ensure minimum height for thin rectangles (lines)
-						if (element.optInt("height", 0) < 2) {
-							element.put("height", 2);
-						}
-						elements.add(new ShapeElement(element, context));
-						Log.d("ElementFactory", "Created ShapeElement from rectangle");
-						break;
-					// Handle Qwen format - convert oval to shape  
-					case "oval":
-						element.put("type", "shape");
-						element.put("shapeType", "oval");
-						// Ensure minimum dimensions for visibility
-						if (element.optInt("width", 0) < 2) {
-							element.put("width", 2);
-						}
-						if (element.optInt("height", 0) < 2) {
-							element.put("height", 2);
-						}
-						elements.add(new ShapeElement(element, context));
-						Log.d("ElementFactory", "Created ShapeElement from oval");
-						break;
-					// Handle other potential Qwen shape types
-					case "circle":
-						element.put("type", "shape");
-						element.put("shapeType", "oval");
-						elements.add(new ShapeElement(element, context));
-						Log.d("ElementFactory", "Created ShapeElement from circle");
-						break;
-					case "line":
-						element.put("type", "shape");
-						element.put("shapeType", "line");
-						elements.add(new ShapeElement(element, context));
-						Log.d("ElementFactory", "Created ShapeElement from line");
-						break;
-					case "triangle":
-						element.put("type", "shape");
-						element.put("shapeType", "triangle");
-						elements.add(new ShapeElement(element, context));
-						Log.d("ElementFactory", "Created ShapeElement from triangle");
-						break;
-					case "table":
-						elements.add(new TableElement(element, context));
-						Log.d("ElementFactory", "Created TableElement");
-						break;
-					case "chart":
-					elements.add(new ChartElement(element, context));
-					break;
-					case "icon":
-					elements.add(new IconElement(element, context));
-					break;
+				String type = element.optString("type", "unknown");
+
+				Log.d("ElementFactory", "Processing element " + i + ": " + element.toString());
+				Log.d("ElementFactory", "Creating element type: " + type + " at position (" +
+					element.optInt("x", 0) + "," + element.optInt("y", 0) + ")");
+
+				try {
+					switch (type.toLowerCase()) {
+						case "text":
+							elements.add(new TextElement(element, context));
+							Log.i("ElementFactory", "Successfully created TextElement: " + element.optString("content", ""));
+							break;
+						case "image":
+							elements.add(new ImageElement(element, context));
+							Log.i("ElementFactory", "Successfully created ImageElement");
+							break;
+						case "shape":
+							elements.add(new ShapeElement(element, context));
+							Log.i("ElementFactory", "Successfully created ShapeElement: " + element.optString("shapeType", ""));
+							break;
+						// Handle Qwen format - convert rectangle to shape
+						case "rectangle":
+							element.put("type", "shape");
+							element.put("shapeType", "rectangle");
+							if (element.optInt("height", 0) < 2) {
+								element.put("height", 2);
+							}
+							elements.add(new ShapeElement(element, context));
+							Log.i("ElementFactory", "Successfully created ShapeElement from rectangle");
+							break;
+						// Handle Qwen format - convert oval to shape
+						case "oval":
+							element.put("type", "shape");
+							element.put("shapeType", "oval");
+							if (element.optInt("width", 0) < 2) {
+								element.put("width", 2);
+							}
+							if (element.optInt("height", 0) < 2) {
+								element.put("height", 2);
+							}
+							elements.add(new ShapeElement(element, context));
+							Log.i("ElementFactory", "Successfully created ShapeElement from oval");
+							break;
+						case "circle":
+							element.put("type", "shape");
+							element.put("shapeType", "oval");
+							elements.add(new ShapeElement(element, context));
+							Log.i("ElementFactory", "Successfully created ShapeElement from circle");
+							break;
+						case "line":
+							element.put("type", "shape");
+							element.put("shapeType", "line");
+							elements.add(new ShapeElement(element, context));
+							Log.i("ElementFactory", "Successfully created ShapeElement from line");
+							break;
+						case "triangle":
+							element.put("type", "shape");
+							element.put("shapeType", "triangle");
+							elements.add(new ShapeElement(element, context));
+							Log.i("ElementFactory", "Successfully created ShapeElement from triangle");
+							break;
+						case "table":
+							elements.add(new TableElement(element, context));
+							Log.i("ElementFactory", "Successfully created TableElement");
+							break;
+						case "chart":
+							elements.add(new ChartElement(element, context));
+							Log.i("ElementFactory", "Successfully created ChartElement");
+							break;
+						case "icon":
+							elements.add(new IconElement(element, context));
+							Log.i("ElementFactory", "Successfully created IconElement");
+							break;
+						default:
+							Log.w("ElementFactory", "Unknown element type: " + type + ". Creating a fallback error element.");
+							elements.add(createErrorTextElement(context, "Unknown type: " + type));
+							break;
+					}
+				} catch (Exception e) {
+					Log.e("ElementFactory", "Error creating element of type " + type, e);
+					elements.add(createErrorTextElement(context, "Error parsing " + type));
 				}
 			}
 		} catch (Exception e) {
 			Log.e("ElementFactory", "Error creating elements from JSON", e);
 		}
-		
+
 		Log.d("ElementFactory", "Successfully created " + elements.size() + " elements from JSON");
 		return elements;
+	}
+
+	private static TextElement createErrorTextElement(Context context, String errorMessage) {
+		try {
+			JSONObject json = new JSONObject();
+			json.put("type", "text");
+			json.put("content", "Error: " + errorMessage);
+			json.put("x", 10);
+			json.put("y", 10);
+			json.put("width", 280);
+			json.put("height", 180);
+			json.put("fontSize", 12);
+			json.put("color", "#FF0000");
+			json.put("bold", true);
+			json.put("alignment", "center");
+
+			return new TextElement(json, context);
+		} catch (JSONException e) {
+			Log.e("ElementFactory", "Error creating default error text element", e);
+			return null; // Should not happen
+		}
 	}
 	
 	/**

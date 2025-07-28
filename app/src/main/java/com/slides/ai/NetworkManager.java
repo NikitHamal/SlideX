@@ -49,7 +49,7 @@ public class NetworkManager {
 		this.executorService = executorService;
 	}
 	
-	public void sendPromptToGemini(String prompt, final ApiResponseCallback callback) {
+	public void sendPromptToGemini(String prompt, float canvasWidth, float canvasHeight, final ApiResponseCallback callback) {
 		// Cancel any previous network operation
 		if (networkThread != null && networkThread.isAlive()) {
 			networkThread.interrupt();
@@ -62,6 +62,7 @@ public class NetworkManager {
 				try {
 					// Construct the structured prompt with improved guidance for layout
 					String structuredPrompt = "Create a professional presentation slide based on this prompt: \"" + prompt + "\". " +
+					"The canvas size is " + canvasWidth + "x" + canvasHeight + " pixels. Please generate the slide elements accordingly." +
 					"Respond with a JSON object containing these fields:\n" +
 					"- backgroundColor: hex color code for slide background (use professional, subtle colors)\n" +
 					"- elements: array of objects, each with:\n" +
@@ -72,7 +73,7 @@ public class NetworkManager {
 					"  - for table: rows, columns, x, y, width, height, data (2D array), headerColor, cellColor\n" +
 					"For charts: include chartType ('bar', 'pie', 'line'), data array with value, label, color\n" +
 					"For icons: include iconName ('home', 'settings', etc.) and color" +
-					"Be creative but focused. Use real image URLs. All positions (x,y) and dimensions should be in dp relative to the slide size (320x200).\n" +
+					"Be creative but focused. Use real image URLs. All positions (x,y) and dimensions should be in dp relative to the slide size (" + canvasWidth + "x" + canvasHeight + ").\n" +
 					"IMPORTANT: Ensure elements don't overlap and maintain proper spacing. Place title at top, ensure text is readable, and create a balanced layout with clear visual hierarchy.";
 					
 					// Create JSON request body

@@ -152,6 +152,7 @@ public class ShapeElement extends SlideElement {
 	public void draw(Canvas canvas) {
 		canvas.save();
 		canvas.translate(x, y);
+		canvas.rotate(rotation, width / 2, height / 2);
 		
 		// Draw fill
 		canvas.drawPath(shapePath, fillPaint);

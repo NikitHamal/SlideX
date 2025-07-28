@@ -10,7 +10,9 @@ import org.json.JSONObject;
  */
 public abstract class SlideElement {
     protected int x, y, width, height;
-    
+    public boolean lockAspectRatio = true;
+    public float rotation = 0;
+
     public SlideElement(JSONObject json, Context context) throws JSONException {
         x = dpToPx(json.getInt("x"), context);
         y = dpToPx(json.getInt("y"), context);

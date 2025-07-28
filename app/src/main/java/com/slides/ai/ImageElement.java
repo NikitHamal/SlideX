@@ -72,6 +72,7 @@ public class ImageElement extends SlideElement {
 	public void draw(Canvas canvas) {
 		canvas.save();
 		canvas.translate(x, y);
+		canvas.rotate(rotation, width / 2, height / 2);
 
 		// Clip to rounded rectangle if corner radius > 0
 		if (cornerRadius > 0) {
