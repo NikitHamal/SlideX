@@ -105,6 +105,9 @@ public class CodeFragment extends Fragment {
         if (newTab != null) {
             newTab.select();
         }
+
+        // Automatically save and notify listener so the SlidesFragment updates immediately
+        saveCurrentSlide();
     }
 
     private void addSlideToList() {

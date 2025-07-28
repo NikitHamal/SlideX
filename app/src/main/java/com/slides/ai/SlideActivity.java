@@ -63,7 +63,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 public class SlideActivity extends AppCompatActivity implements SlideRenderer.ElementSelectionListener,
-CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener, SlidesFragment.SlideNavigationListener {
+CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener, SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 
 	private ViewPager2 viewPager;
 	private TabLayout tabLayout;
@@ -165,6 +165,10 @@ CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListene
 			if (slidesFragment != null) {
 				slidesFragment.setSlideNavigationListener(this);
 			}
+
+			if (chatFragment != null) {
+				chatFragment.setChatInteractionListener(this);
+			}
 		});
 	}
 
@@ -228,6 +232,59 @@ CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListene
 			viewPager.setCurrentItem(2); // Switch to code tab
 			// The add slide functionality is handled in the code fragment
 		}
+	}
+
+	/*
+	 * ChatFragment listener implementation
+	 */
+	@Override
+	public void onPromptSubmitted(String prompt) {
+		if (networkManager == null) return;
+
+		if (chatFragment != null) {
+			chatFragment.addAiMessage("Generating slides, please wait...");
+		}
+
+		networkManager.sendPromptToGemini(prompt, new NetworkManager.ApiResponseCallback() {
+			@Override
+			public void onSuccess(String jsonStr) {
+				try {
+					JSONObject slideJson = new JSONObject(jsonStr);
+
+					// Update CodeFragment with generated slide JSON
+					if (codeFragment != null) {
+						codeFragment.setCode(slideJson.toString(2));
+					}
+
+					// Update SlidesFragment to render the slide
+					if (slidesFragment != null) {
+						List<JSONObject> slides = new ArrayList<>();
+						slides.add(slideJson);
+						slidesFragment.setSlides(slides);
+						slidesFragment.navigateToSlide(0);
+					}
+
+					if (chatFragment != null) {
+						chatFragment.addAiMessage("Slide generated successfully!");
+					}
+
+					// Switch to Slides tab to show result
+					viewPager.setCurrentItem(0);
+
+				} catch (JSONException e) {
+					if (chatFragment != null) {
+						chatFragment.addAiMessage("Failed to parse slide JSON: " + e.getMessage());
+					}
+				}
+			}
+
+			@Override
+			public void onError(String errorMessage) {
+				if (chatFragment != null) {
+					chatFragment.addAiMessage(errorMessage);
+				}
+			}
+		});
 	}
 
 	private void saveSlideStackIfTemporary() {

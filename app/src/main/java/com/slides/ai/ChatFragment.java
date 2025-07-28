@@ -24,6 +24,16 @@ public class ChatFragment extends Fragment {
     private EditText chatInput;
     private ImageButton sendButton;
 
+    public interface ChatInteractionListener {
+        void onPromptSubmitted(String prompt);
+    }
+
+    private ChatInteractionListener chatListener;
+
+    public void setChatInteractionListener(ChatInteractionListener listener) {
+        this.chatListener = listener;
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -47,6 +57,9 @@ public class ChatFragment extends Fragment {
                 addUserMessage(message);
                 chatInput.setText("");
                 // TODO: Add logic to send the message to the AI
+                if (chatListener != null) {
+                    chatListener.onPromptSubmitted(message);
+                }
             }
         });
 
@@ -59,7 +72,7 @@ public class ChatFragment extends Fragment {
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
     }
 
-    private void addAiMessage(String message) {
+    public void addAiMessage(String message) {
         chatMessages.add(new ChatMessage(message, false));
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
