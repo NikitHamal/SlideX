@@ -23,6 +23,16 @@ public class ChatFragment extends Fragment {
     private List<ChatMessage> chatMessages;
     private EditText chatInput;
     private ImageButton sendButton;
+    
+    private ChatInteractionListener chatInteractionListener;
+
+    public interface ChatInteractionListener {
+        void onChatPromptSent(String prompt);
+    }
+
+    public void setChatInteractionListener(ChatInteractionListener listener) {
+        this.chatInteractionListener = listener;
+    }
 
     @Nullable
     @Override
@@ -44,13 +54,32 @@ public class ChatFragment extends Fragment {
         sendButton.setOnClickListener(v -> {
             String message = chatInput.getText().toString().trim();
             if (!message.isEmpty()) {
-                addUserMessage(message);
+                sendMessage(message);
                 chatInput.setText("");
-                // TODO: Add logic to send the message to the AI
             }
         });
 
+        // Add welcome message
+        addWelcomeMessage();
+
         return view;
+    }
+
+    private void addWelcomeMessage() {
+        addAiMessage("Hello! I'm here to help you create amazing presentations. Just describe what kind of slide you want and I'll generate it for you!\n\nFor example, try:\n• \"Create a slide about renewable energy\"\n• \"Make a presentation slide for our company overview\"\n• \"Generate a slide about machine learning basics\"");
+    }
+
+    private void sendMessage(String message) {
+        // Add user message to chat
+        addUserMessage(message);
+        
+        // Show typing indicator
+        addAiMessage("Creating your slide...");
+        
+        // Send to parent activity for processing
+        if (chatInteractionListener != null) {
+            chatInteractionListener.onChatPromptSent(message);
+        }
     }
 
     private void addUserMessage(String message) {
@@ -59,9 +88,22 @@ public class ChatFragment extends Fragment {
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
     }
 
-    private void addAiMessage(String message) {
+    public void addAiMessage(String message) {
+        // Remove the last "Creating your slide..." message if it exists
+        if (!chatMessages.isEmpty()) {
+            ChatMessage lastMessage = chatMessages.get(chatMessages.size() - 1);
+            if (!lastMessage.isUser() && lastMessage.getText().equals("Creating your slide...")) {
+                chatMessages.remove(chatMessages.size() - 1);
+                chatAdapter.notifyItemRemoved(chatMessages.size());
+            }
+        }
+        
         chatMessages.add(new ChatMessage(message, false));
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+    }
+
+    public void addAiResponse(String response) {
+        addAiMessage(response);
     }
 }

@@ -63,7 +63,8 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 public class SlideActivity extends AppCompatActivity implements SlideRenderer.ElementSelectionListener,
-CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener, SlidesFragment.SlideNavigationListener {
+CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener, 
+SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 
 	private ViewPager2 viewPager;
 	private TabLayout tabLayout;
@@ -152,30 +153,54 @@ CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListene
 			}
 		}).attach();
 
-		// Wait for fragments to be created then get references
-		viewPager.post(() -> {
-			slidesFragment = adapter.getSlidesFragment();
-			codeFragment = adapter.getCodeFragment();
-			chatFragment = adapter.getChatFragment();
+		// Setup fragment communication after ViewPager is configured
+		setupFragmentCommunication();
+	}
 
-			// Set interaction listeners
-			if (codeFragment != null) {
-				codeFragment.setCodeInteractionListener(this);
-			}
-			if (slidesFragment != null) {
-				slidesFragment.setSlideNavigationListener(this);
+	private void setupFragmentCommunication() {
+		// Use a more reliable way to get fragment references
+		viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+			@Override
+			public void onPageSelected(int position) {
+				super.onPageSelected(position);
+				// Ensure fragments are initialized when first accessed
+				ensureFragmentReferences();
 			}
 		});
+
+		// Initial setup with delay to ensure fragments are created
+		viewPager.post(() -> {
+			ensureFragmentReferences();
+		});
+	}
+
+	private void ensureFragmentReferences() {
+		// Get fragment references from the adapter
+		slidesFragment = adapter.getSlidesFragment();
+		codeFragment = adapter.getCodeFragment();
+		chatFragment = adapter.getChatFragment();
+
+		// Set interaction listeners if fragments are available
+		if (codeFragment != null) {
+			codeFragment.setCodeInteractionListener(this);
+		}
+		if (slidesFragment != null) {
+			slidesFragment.setSlideNavigationListener(this);
+		}
+		if (chatFragment != null) {
+			chatFragment.setChatInteractionListener(this);
+		}
 	}
 
 	private void setupSlideRenderer() {
 		// Wait for the slides fragment to be created
 		new Handler().postDelayed(() -> {
+			ensureFragmentReferences();
 			if (slidesFragment != null) {
 				customizationManager = new CustomizationManager(this, slidesFragment.getSlideRenderer());
 				customizationManager.setImageSelectionCallback(this);
 			}
-		}, 100);
+		}, 500); // Increased delay to ensure fragments are ready
 	}
 
 	@Override
@@ -184,18 +209,20 @@ CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListene
 			JSONObject slideData = new JSONObject(jsonCode);
 			
 			// Update the slides fragment with new data
-			if (slidesFragment != null) {
+			ensureFragmentReferences(); // Make sure we have fragment references
+			if (slidesFragment != null && codeFragment != null) {
 				// Get all slides from code fragment and update slides fragment
-				if (codeFragment != null) {
-					List<String> allSlides = codeFragment.getAllSlides();
-					List<JSONObject> slideObjects = new ArrayList<>();
-					for (String slide : allSlides) {
-						try {
-							slideObjects.add(new JSONObject(slide));
-						} catch (JSONException e) {
-							// Skip invalid slides
-						}
+				List<String> allSlides = codeFragment.getAllSlides();
+				List<JSONObject> slideObjects = new ArrayList<>();
+				for (String slide : allSlides) {
+					try {
+						slideObjects.add(new JSONObject(slide));
+					} catch (JSONException e) {
+						Log.e("SlideActivity", "Invalid JSON for slide: " + e.getMessage());
+						// Skip invalid slides but continue processing
 					}
+				}
+				if (!slideObjects.isEmpty()) {
 					slidesFragment.setSlides(slideObjects);
 					slidesFragment.navigateToSlide(slideIndex);
 				}
@@ -209,24 +236,103 @@ CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListene
 			
 			Toast.makeText(this, "Slide " + (slideIndex + 1) + " updated successfully", Toast.LENGTH_SHORT).show();
 		} catch (JSONException e) {
-			Toast.makeText(this, "Invalid JSON format", Toast.LENGTH_SHORT).show();
+			Log.e("SlideActivity", "JSON parsing error: " + e.getMessage());
+			Toast.makeText(this, "Invalid JSON format: " + e.getMessage(), Toast.LENGTH_SHORT).show();
 		}
 	}
 
 	@Override
 	public void onSlideChanged(int slideIndex) {
 		// Sync code fragment to show the correct slide
+		ensureFragmentReferences();
 		if (codeFragment != null) {
-			// This will be handled by the code fragment's tab selection
+			// The code fragment should handle tab selection automatically
+			// We could add additional sync logic here if needed
 		}
 	}
 
 	@Override
 	public void onAddSlideRequested() {
 		// Switch to code tab and add a new slide
+		ensureFragmentReferences();
 		if (codeFragment != null) {
 			viewPager.setCurrentItem(2); // Switch to code tab
 			// The add slide functionality is handled in the code fragment
+			// Trigger add slide after switching tabs
+			viewPager.post(() -> codeFragment.addNewSlideFromExternal());
+		}
+	}
+
+	@Override
+	public void onChatPromptSent(String prompt) {
+		// Handle chat prompt and generate slide
+		if (networkManager != null) {
+			networkManager.sendPromptToGemini(prompt, new NetworkManager.ApiResponseCallback() {
+				@Override
+				public void onSuccess(String jsonStr) {
+					try {
+						// Parse the JSON and add it as a new slide
+						JSONObject slideData = new JSONObject(jsonStr);
+						
+						// Add to code fragment
+						ensureFragmentReferences();
+						if (codeFragment != null) {
+							codeFragment.addSlideFromJson(jsonStr);
+							
+							// Update slides fragment
+							if (slidesFragment != null) {
+								List<String> allSlides = codeFragment.getAllSlides();
+								List<JSONObject> slideObjects = new ArrayList<>();
+								for (String slide : allSlides) {
+									try {
+										slideObjects.add(new JSONObject(slide));
+									} catch (JSONException e) {
+										Log.e("SlideActivity", "Invalid JSON for slide: " + e.getMessage());
+									}
+								}
+								if (!slideObjects.isEmpty()) {
+									slidesFragment.setSlides(slideObjects);
+									slidesFragment.navigateToSlide(slideObjects.size() - 1); // Navigate to new slide
+								}
+							}
+						}
+						
+						// Switch to slides tab to show the result
+						viewPager.setCurrentItem(0);
+						
+						// Add AI response to chat
+						if (chatFragment != null) {
+							chatFragment.addAiResponse("Great! I've created a slide based on your request. You can view it in the Slides tab and edit the JSON code in the Code tab if needed.");
+						}
+						
+					} catch (JSONException e) {
+						Log.e("SlideActivity", "Error parsing generated JSON: " + e.getMessage());
+						if (chatFragment != null) {
+							chatFragment.addAiResponse("I generated a slide, but there was an error parsing the JSON. Please check the Code tab and fix any formatting issues.");
+						}
+					}
+				}
+
+				@Override
+				public void onError(String errorMessage) {
+					Log.e("SlideActivity", "Chat API error: " + errorMessage);
+					if (chatFragment != null) {
+						String userFriendlyMessage;
+						if (errorMessage.contains("API key")) {
+							userFriendlyMessage = "Please add a valid Gemini API key in Settings to use the AI chat feature.";
+						} else if (errorMessage.contains("quota") || errorMessage.contains("limit")) {
+							userFriendlyMessage = "API quota exceeded. Please try again later or check your API key limits.";
+						} else {
+							userFriendlyMessage = "Sorry, I couldn't process your request right now. Please try again or create slides manually using the Code tab.";
+						}
+						chatFragment.addAiResponse(userFriendlyMessage);
+					}
+				}
+			});
+		} else {
+			if (chatFragment != null) {
+				chatFragment.addAiResponse("Network manager not available. Please restart the app and try again.");
+			}
 		}
 	}
 
@@ -238,41 +344,40 @@ CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListene
 				stackId = "stack_" + System.currentTimeMillis();
 
 				// Get current slide data from code fragment
-				String jsonCode = codeFragment != null ? codeFragment.getCode() : "";
-				if (!jsonCode.isEmpty()) {
-					// Create a slide stack with the current slide
-					List<String> slides = new ArrayList<>();
-					slides.add(jsonCode);
+				ensureFragmentReferences();
+				if (codeFragment != null) {
+					List<String> allSlides = codeFragment.getAllSlides();
+					if (!allSlides.isEmpty()) {
+						// Save to shared preferences
+						android.content.SharedPreferences sharedPreferences = getSharedPreferences("slide_stacks", MODE_PRIVATE);
+						String stacksJson = sharedPreferences.getString("stacks", "[]");
 
-					// Save to shared preferences
-					android.content.SharedPreferences sharedPreferences = getSharedPreferences("slide_stacks", MODE_PRIVATE);
-					String stacksJson = sharedPreferences.getString("stacks", "[]");
+						JSONArray stacksArray = new JSONArray(stacksJson);
 
-					JSONArray stacksArray = new JSONArray(stacksJson);
+						// Create new stack object
+						JSONObject stackObj = new JSONObject();
+						stackObj.put("id", stackId);
+						stackObj.put("name", stackName);
+						stackObj.put("createdAt", System.currentTimeMillis());
 
-					// Create new stack object
-					JSONObject stackObj = new JSONObject();
-					stackObj.put("id", stackId);
-					stackObj.put("name", stackName);
-					stackObj.put("createdAt", System.currentTimeMillis());
+						// Add slides array
+						JSONArray slidesArray = new JSONArray();
+						for (String slide : allSlides) {
+							slidesArray.put(slide);
+						}
+						stackObj.put("slides", slidesArray);
 
-					// Add slides array
-					JSONArray slidesArray = new JSONArray();
-					for (String slide : slides) {
-						slidesArray.put(slide);
+						// Add to stacks array
+						stacksArray.put(stackObj);
+
+						// Save back to preferences
+						sharedPreferences.edit()
+							.putString("stacks", stacksArray.toString())
+							.apply();
 					}
-					stackObj.put("slides", slidesArray);
-
-					// Add to stacks array
-					stacksArray.put(stackObj);
-
-					// Save back to preferences
-					sharedPreferences.edit()
-						.putString("stacks", stacksArray.toString())
-						.apply();
 				}
 			} catch (JSONException e) {
-				e.printStackTrace();
+				Log.e("SlideActivity", "Error saving slide stack: " + e.getMessage());
 			}
 		}
 	}

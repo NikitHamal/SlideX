@@ -89,9 +89,10 @@ public class CodeFragment extends Fragment {
         // Initialize with first slide
         addSlideToList();
         addTabForSlide(0);
+        loadSlideContent(0);
     }
 
-    private void addNewSlide() {
+    public void addNewSlide() {
         // Save current slide content first
         saveCurrentSlideContent();
         
@@ -105,6 +106,29 @@ public class CodeFragment extends Fragment {
         if (newTab != null) {
             newTab.select();
         }
+    }
+
+    public void addNewSlideFromExternal() {
+        // Called from external sources (like slides fragment plus button)
+        addNewSlide();
+    }
+
+    public void addSlideFromJson(String jsonCode) {
+        // Add a slide with specific JSON content
+        saveCurrentSlideContent();
+        
+        int newIndex = slideJsonList.size();
+        slideJsonList.add(jsonCode);
+        addTabForSlide(newIndex);
+        
+        // Switch to new slide
+        TabLayout.Tab newTab = slidesTabLayout.getTabAt(newIndex);
+        if (newTab != null) {
+            newTab.select();
+        }
+        
+        // Load the content
+        loadSlideContent(newIndex);
     }
 
     private void addSlideToList() {
@@ -129,7 +153,7 @@ public class CodeFragment extends Fragment {
     }
 
     private void saveCurrentSlideContent() {
-        if (currentSlideIndex < slideJsonList.size()) {
+        if (currentSlideIndex < slideJsonList.size() && codeInput != null) {
             String content = codeInput.getText().toString().trim();
             if (!content.isEmpty()) {
                 slideJsonList.set(currentSlideIndex, content);
@@ -138,7 +162,7 @@ public class CodeFragment extends Fragment {
     }
 
     private void loadSlideContent(int index) {
-        if (index < slideJsonList.size()) {
+        if (index < slideJsonList.size() && codeInput != null) {
             codeInput.setText(slideJsonList.get(index));
         }
     }
@@ -154,6 +178,7 @@ public class CodeFragment extends Fragment {
     }
 
     public String getCode() {
+        saveCurrentSlideContent(); // Ensure current content is saved
         return codeInput != null ? codeInput.getText().toString() : "";
     }
 
@@ -168,6 +193,15 @@ public class CodeFragment extends Fragment {
 
     public int getSlideCount() {
         return slideJsonList.size();
+    }
+
+    public void navigateToSlide(int index) {
+        if (index >= 0 && index < slideJsonList.size()) {
+            TabLayout.Tab tab = slidesTabLayout.getTabAt(index);
+            if (tab != null) {
+                tab.select();
+            }
+        }
     }
 
     private String generateDefaultSlideJson() {

@@ -13,6 +13,10 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
 
     public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
         super(fragmentActivity);
+        // Pre-create fragments to ensure they're available
+        slidesFragment = new SlidesFragment();
+        chatFragment = new ChatFragment();
+        codeFragment = new CodeFragment();
     }
 
     @NonNull
@@ -20,22 +24,13 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
         switch (position) {
             case 0:
-                if (slidesFragment == null) {
-                    slidesFragment = new SlidesFragment();
-                }
                 return slidesFragment;
             case 1:
-                if (chatFragment == null) {
-                    chatFragment = new ChatFragment();
-                }
                 return chatFragment;
             case 2:
-                if (codeFragment == null) {
-                    codeFragment = new CodeFragment();
-                }
                 return codeFragment;
             default:
-                return new SlidesFragment();
+                return slidesFragment;
         }
     }
 
