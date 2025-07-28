@@ -6,12 +6,8 @@
         android:id="@+id/action_download"
         android:title="Download"
         android:icon="@drawable/icon_download_round"
-        app:showAsAction="ifRoom" />
-
-    <item
-        android:id="@+id/action_settings"
-        android:title="Settings"
-        android:icon="@drawable/ic_settings"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom"
+        android:width="24dp"
+        android:height="24dp" />
 
 </menu>

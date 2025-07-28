@@ -21,6 +21,7 @@ import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -215,5 +216,105 @@ CustomizationManager.ImageSelectionCallback {
 
 	public HashMap<String, Bitmap> getImageCache() {
 		return imageCache;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+		if (item.getItemId() == R.id.action_download) {
+			showDownloadOptionsDialog();
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+	private void showDownloadOptionsDialog() {
+		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this,
+		R.style.ThemeOverlay_Material3_MaterialAlertDialog_Centered);
+
+		View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_download_options, null);
+
+		// Initialize all views first
+		AutoCompleteTextView formatSpinner = dialogView.findViewById(R.id.format_spinner);
+		AutoCompleteTextView qualitySpinner = dialogView.findViewById(R.id.quality_spinner);
+		AutoCompleteTextView sizeSpinner = dialogView.findViewById(R.id.size_spinner);
+		SwitchMaterial transparentSwitch = dialogView.findViewById(R.id.transparent_switch);
+
+		// Setup format spinner
+		String[] formats = new String[]{"PNG", "JPG", "PDF"};
+		ArrayAdapter<String> formatAdapter = new ArrayAdapter<>(
+		this, android.R.layout.simple_dropdown_item_1line, formats);
+		formatSpinner.setAdapter(formatAdapter);
+		formatSpinner.setText(formats[0], false); // Default to PNG
+
+		// Setup quality spinner (only for PNG/JPG)
+		String[] qualities = new String[]{"High (100%)", "Medium (80%)", "Low (50%)"};
+		ArrayAdapter<String> qualityAdapter = new ArrayAdapter<>(
+		this, android.R.layout.simple_dropdown_item_1line, qualities);
+		qualitySpinner.setAdapter(qualityAdapter);
+		qualitySpinner.setText(qualities[0], false); // Default to High
+
+		// Setup size spinner
+		String[] sizes = new String[]{"Original", "2x", "4x"};
+		ArrayAdapter<String> sizeAdapter = new ArrayAdapter<>(
+		this, android.R.layout.simple_dropdown_item_1line, sizes);
+		sizeSpinner.setAdapter(sizeAdapter);
+		sizeSpinner.setText(sizes[0], false); // Default to Original
+
+		// Show transparent switch by default if PNG is selected
+		transparentSwitch.setVisibility(formatSpinner.getText().toString().equals("PNG") ? View.VISIBLE : View.GONE);
+
+		// Handle format changes
+		formatSpinner.setOnItemClickListener((parent, view, position, id) -> {
+			String selectedFormat = formats[position];
+			transparentSwitch.setVisibility(selectedFormat.equals("PNG") ? View.VISIBLE : View.GONE);
+			qualitySpinner.setEnabled(!selectedFormat.equals("PDF"));
+		});
+
+		builder.setTitle("Export Slide")
+		.setView(dialogView)
+		.setPositiveButton("Export", (dialog, which) -> {
+			String format = formatSpinner.getText().toString();
+
+			if (format.equals("PDF")) {
+				pendingExportFormat = format;
+				//saveAsPdf(); // TODO: Implement this
+			} else {
+				// Parse quality and size
+				String quality = qualitySpinner.getText().toString();
+				String size = sizeSpinner.getText().toString();
+				boolean transparent = transparentSwitch.isChecked() && format.equals("PNG");
+
+				int qualityValue = 100;
+				if (quality.contains("80")) {
+					qualityValue = 80;
+				} else if (quality.contains("50")) {
+					qualityValue = 50;
+				}
+
+				float scale = 1.0f;
+				if (size.equals("2x")) {
+					scale = 2.0f;
+				} else if (size.equals("4x")) {
+					scale = 4.0f;
+				}
+
+				// Store the parameters for permission callback
+				pendingExportFormat = format;
+				pendingExportQuality = qualityValue;
+				pendingExportScale = scale;
+				pendingExportTransparent = transparent;
+
+				//saveSlideAsImage(format, qualityValue, scale, transparent); // TODO: Implement this
+			}
+		})
+		.setNegativeButton("Cancel", null);
+
+		AlertDialog dialog = builder.create();
+		dialog.show();
+
+		dialog.getWindow().setLayout(
+		ViewGroup.LayoutParams.MATCH_PARENT,
+		ViewGroup.LayoutParams.WRAP_CONTENT
+		);
 	}
 }

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SlideX Documentation</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            padding: 16px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>SlideX Documentation</h1>
+
+    <h2>Introduction</h2>
+    <p>
+        Welcome to the SlideX documentation. Here you will find information about how to use the app,
+        including details about the JSON structure for creating slides.
+    </p>
+
+    <h2>JSON Structure</h2>
+    <p>
+        The slides are generated from a JSON object. The basic structure of the JSON is as follows:
+    </p>
+    <pre><code>
+{
+  "elements": [
+    {
+      "type": "text",
+      "text": "Hello, World!",
+      "x": 50,
+      "y": 50,
+      "size": 24,
+      "color": "#000000"
+    },
+    {
+      "type": "image",
+      "url": "https://example.com/image.png",
+      "x": 100,
+      "y": 100,
+      "width": 100,
+      "height": 100
+    }
+  ]
+}
+    </code></pre>
+
+    <h3>Elements</h3>
+    <p>
+        The <code>elements</code> array contains a list of objects, each representing an element on the slide.
+        Each element has a <code>type</code> property, which can be one of the following:
+    </p>
+    <ul>
+        <li><code>text</code></li>
+        <li><code>image</code></li>
+        <li><code>shape</code></li>
+        <li><code>table</code></li>
+        <li><code>chart</code></li>
+        <li><code>icon</code></li>
+    </ul>
+
+    <h3>Text Element</h3>
+    <p>
+        The <code>text</code> element has the following properties:
+    </p>
+    <ul>
+        <li><code>text</code>: The text to display.</li>
+        <li><code>x</code>: The x-coordinate of the text.</li>
+        <li><code>y</code>: The y-coordinate of the text.</li>
+        <li><code>size</code>: The font size of the text.</li>
+        <li><code>color</code>: The color of the text in hex format.</li>
+    </ul>
+
+    <h3>Image Element</h3>
+    <p>
+        The <code>image</code> element has the following properties:
+    </p>
+    <ul>
+        <li><code>url</code>: The URL of the image.</li>
+        <li><code>x</code>: The x-coordinate of the image.</li>
+        <li><code>y</code>: The y-coordinate of the image.</li>
+        <li><code>width</code>: The width of the image.</li>
+        <li><code>height</code>: The height of the image.</li>
+    </ul>
+
+</body>
+</html>

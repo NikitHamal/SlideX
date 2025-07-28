@@ -1,20 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<WebView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/documentation_webview"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Documentation"
-        android:textSize="24sp"
-        android:layout_margin="16dp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Here you will find documentation about the JSON codes, best practices, and tips and tricks."
-        android:layout_margin="16dp" />
-
-</LinearLayout>
+    android:layout_height="match_parent" />
