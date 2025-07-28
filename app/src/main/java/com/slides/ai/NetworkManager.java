@@ -71,9 +71,8 @@ public class NetworkManager {
 					"  - for shape: shapeType ('rectangle', 'oval', 'line', 'triangle', 'star', 'hexagon'), x, y, width, height, color, cornerRadius (for rectangles), opacity (0.0-1.0), strokeWidth (optional), strokeColor (optional)\n" +
 					"  - for table: rows, columns, x, y, width, height, data (2D array), headerColor, cellColor\n" +
 					"For charts: include chartType ('bar', 'pie', 'line'), data array with value, label, color\n" +
-					"For icons: include iconName ('home', 'settings', etc.) and color" +
-					"Be creative but focused. Use real image URLs. All positions (x,y) and dimensions should be in dp relative to the slide size (320x200).\n" +
-					"IMPORTANT: Ensure elements don't overlap and maintain proper spacing. Place title at top, ensure text is readable, and create a balanced layout with clear visual hierarchy.";
+					"For icons: include iconName ('home', 'settings', etc.) and color\n" +
+					"IMPORTANT: All x, y, width, height, and fontSize values must be percentages (0.0–1.0) of the canvas, not pixels or dp. The canvas is responsive and can be any size, so use only proportional values. Ensure elements don't overlap and maintain proper spacing. Place title at top, ensure text is readable, and create a balanced layout with clear visual hierarchy.";
 					
 					// Create JSON request body
 					JSONObject requestBody = new JSONObject();
