@@ -127,8 +127,9 @@ public class TextElement extends SlideElement {
 		canvas.save();
 		canvas.translate(xPx, yPx);
 		// Recreate text layout if width changed
-		if (textLayout == null || textLayout.getWidth() != (int) wPx) {
-			createTextLayout((int) wPx);
+		int wInt = (int) wPx;
+		if (textLayout == null || textLayout.getWidth() != wInt) {
+			createTextLayout(wInt);
 		}
 		textLayout.draw(canvas);
 		canvas.restore();

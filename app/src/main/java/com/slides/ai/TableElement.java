@@ -88,6 +88,10 @@ public class TableElement extends SlideElement {
 		}
 	}
 	
+	private static int dpToPx(float dp, Context context) {
+	    return (int) (dp * context.getResources().getDisplayMetrics().density);
+	}
+	
 	@Override
 	public JSONObject toJson() throws JSONException {
 		JSONObject json = new JSONObject();

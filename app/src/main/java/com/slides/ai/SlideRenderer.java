@@ -195,7 +195,7 @@ public class SlideRenderer {
 					}
 					
 					// If not touching a resize handle, check if touching the selected element for moving
-					if (selectedElement.containsPoint(xPx, yPx)) {
+					if (selectedElement.containsPoint(xPx, yPx, canvasWidth, canvasHeight)) {
 						isMovingElement = true;
 						lastTouchX = x;
 						lastTouchY = y;
@@ -410,7 +410,7 @@ public class SlideRenderer {
 		// Check elements in reverse order (top-most first)
 		for (int i = elements.size() - 1; i >= 0; i--) {
 			SlideElement element = elements.get(i);
-			if (element.containsPoint(xPx, yPx)) {
+			if (element.containsPoint(xPx, yPx, slideView.getWidth(), slideView.getHeight())) {
 				return element;
 			}
 		}
