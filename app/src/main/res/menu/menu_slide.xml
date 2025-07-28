@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-
     <item
         android:id="@+id/action_download"
+        android:icon="@drawable/ic_download"
         android:title="Download"
-        android:icon="@drawable/icon_download_round"
-        app:showAsAction="ifRoom"
-        android:width="24dp"
-        android:height="24dp" />
-
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_more"
+        android:icon="@drawable/ic_more_vert"
+        android:title="More"
+        app:showAsAction="ifRoom" />
 </menu>

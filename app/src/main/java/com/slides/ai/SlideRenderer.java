@@ -70,6 +70,13 @@ public class SlideRenderer {
 	}
 	
 	private ElementSelectionListener elementSelectionListener;
+
+	// Callback interface for element updates
+	public interface ElementUpdateListener {
+		void onElementUpdated();
+	}
+
+	private ElementUpdateListener elementUpdateListener;
 	
 	public SlideRenderer(Context context, View slideView, HashMap<String, Bitmap> imageCache) {
 		this.context = context;
@@ -92,6 +99,10 @@ public class SlideRenderer {
 	
 	public void setElementSelectionListener(ElementSelectionListener listener) {
 		this.elementSelectionListener = listener;
+	}
+
+	public void setElementUpdateListener(ElementUpdateListener listener) {
+		this.elementUpdateListener = listener;
 	}
 	
 	public void setSlideData(JSONObject data) {
@@ -264,6 +275,9 @@ public class SlideRenderer {
 					lastTouchX = x;
 					lastTouchY = y;
 					slideView.invalidate();
+                    if (elementUpdateListener != null) {
+                        elementUpdateListener.onElementUpdated();
+                    }
 					return true;
 				}
 				
@@ -295,6 +309,9 @@ public class SlideRenderer {
 					lastTouchX = x;
 					lastTouchY = y;
 					slideView.invalidate();
+                    if (elementUpdateListener != null) {
+                        elementUpdateListener.onElementUpdated();
+                    }
 					return true;
 				}
 				break;

@@ -41,7 +41,7 @@ public class ElementFactory {
 					elements.add(new TextElement(element, context));
 					break;
 					case "image":
-					elements.add(new ImageElement(element, context, imageCache));
+					elements.add(new ImageElement(element, context));
 					break;
 					case "shape":
 					elements.add(new ShapeElement(element, context));
@@ -79,7 +79,7 @@ public class ElementFactory {
 			case "text":
 			return new TextElement(elementData, context);
 			case "image":
-			return new ImageElement(elementData, context, imageCache);
+			return new ImageElement(elementData, context);
 			case "shape":
 			return new ShapeElement(elementData, context);
 			case "table":
@@ -151,7 +151,7 @@ public class ElementFactory {
 	* @param context The application context
 	* @return An ImageElement with default properties
 	*/
-	public static ImageElement createDefaultImageElement(Context context, HashMap<String, Bitmap> imageCache) {
+	public static ImageElement createDefaultImageElement(Context context) {
 		try {
 			JSONObject json = new JSONObject();
 			json.put("type", "image");
@@ -162,7 +162,7 @@ public class ElementFactory {
 			json.put("height", 150);
 			json.put("cornerRadius", 0);
 			
-			return new ImageElement(json, context, imageCache);
+			return new ImageElement(json, context);
 		} catch (JSONException e) {
 			Log.e("ElementFactory", "Error creating default image element", e);
 			return null;

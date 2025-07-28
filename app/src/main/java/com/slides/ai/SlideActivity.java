@@ -64,8 +64,8 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import com.slides.ai.qwen.QwenManager;
 
 public class SlideActivity extends AppCompatActivity implements SlideRenderer.ElementSelectionListener,
-CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener, 
-SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
+CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener,
+SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, SlideRenderer.ElementUpdateListener {
 
 	private ViewPager2 viewPager;
 	private TabLayout tabLayout;
@@ -141,6 +141,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 	private void setupFragments() {
 		adapter = new ViewPagerAdapter(this);
 		viewPager.setAdapter(adapter);
+        viewPager.setUserInputEnabled(false);
 
 		new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
 			switch (position) {
@@ -200,10 +201,22 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 		new Handler().postDelayed(() -> {
 			ensureFragmentReferences();
 			if (slidesFragment != null) {
+				slidesFragment.getSlideRenderer().setElementUpdateListener(this);
 				customizationManager = new CustomizationManager(this, slidesFragment.getSlideRenderer());
 				customizationManager.setImageSelectionCallback(this);
 			}
 		}, 500); // Increased delay to ensure fragments are ready
+	}
+
+	@Override
+	public void onElementUpdated() {
+        ensureFragmentReferences();
+        if (slidesFragment != null && codeFragment != null) {
+            JSONObject slideData = slidesFragment.getSlideRenderer().getSlideData();
+            if (slideData != null) {
+                codeFragment.setCode(slideData.toString());
+            }
+        }
 	}
 
 	@Override
@@ -391,6 +404,14 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
     }
 
     private String extractJsonFromResponse(String response) {
+        if (response.contains("```json")) {
+            int startIdx = response.indexOf("```json") + 7;
+            int endIdx = response.lastIndexOf("```");
+            if (endIdx > startIdx) {
+                return response.substring(startIdx, endIdx);
+            }
+        }
+
         // Find the first { and the last } to extract JSON
         int startIdx = response.indexOf('{');
         int endIdx = response.lastIndexOf('}');
@@ -495,12 +516,23 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 		return imageCache;
 	}
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_slide, menu);
+        return true;
+    }
+
 	@Override
 	public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 		if (item.getItemId() == R.id.action_download) {
 			showDownloadOptionsDialog();
 			return true;
 		}
+        if (item.getItemId() == R.id.action_more) {
+            // Handle more options
+            Toast.makeText(this, "More options coming soon!", Toast.LENGTH_SHORT).show();
+            return true;
+        }
 		return super.onOptionsItemSelected(item);
 	}
 
