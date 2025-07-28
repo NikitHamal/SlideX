@@ -93,6 +93,14 @@ public class SlidesFragment extends Fragment {
     }
 
     public void setSlides(List<JSONObject> slideList) {
+        if (slideList == null || slideList.isEmpty()) {
+            this.slides = new ArrayList<>();
+            currentSlideIndex = 0;
+            slideRenderer.setSlideData(null);
+            slideView.invalidate();
+            updateNavigationControls();
+            return;
+        }
         this.slides = new ArrayList<>(slideList);
         if (currentSlideIndex >= slides.size()) {
             currentSlideIndex = Math.max(0, slides.size() - 1);
@@ -107,6 +115,7 @@ public class SlidesFragment extends Fragment {
     }
 
     public void navigateToSlide(int index) {
+        if (slides == null || slides.isEmpty()) return;
         if (index >= 0 && index < slides.size()) {
             currentSlideIndex = index;
             loadCurrentSlide();
@@ -130,9 +139,12 @@ public class SlidesFragment extends Fragment {
     }
 
     private void loadCurrentSlide() {
-        if (currentSlideIndex < slides.size()) {
-            setSlideData(slides.get(currentSlideIndex));
+        if (slides == null || slides.isEmpty() || currentSlideIndex < 0 || currentSlideIndex >= slides.size()) {
+            slideRenderer.setSlideData(null);
+            slideView.invalidate();
+            return;
         }
+        setSlideData(slides.get(currentSlideIndex));
     }
 
     private void updateNavigationControls() {

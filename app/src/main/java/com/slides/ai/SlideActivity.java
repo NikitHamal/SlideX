@@ -109,6 +109,8 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 		Intent intent = getIntent();
 		stackId = intent.getStringExtra("stack_id");
 		stackName = intent.getStringExtra("stack_name");
+		if (stackId == null) stackId = "temp_" + System.currentTimeMillis();
+		if (stackName == null) stackName = "Untitled Stack";
 
 		initViews();
 		setupFragments();
@@ -120,7 +122,11 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 		networkManager = new NetworkManager(apiKeyManager, imageCache, mainHandler, executorService);
 
 		// Initialize slide renderer once we have the slides fragment
-		setupSlideRenderer();
+		try {
+			setupSlideRenderer();
+		} catch (Exception e) {
+			// Ignore
+		}
 	}
 
 	private void initViews() {
@@ -209,7 +215,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 			JSONObject slideData = new JSONObject(jsonCode);
 			
 			// Update the slides fragment with new data
-			ensureFragmentReferences(); // Make sure we have fragment references
+			try { ensureFragmentReferences(); } catch (Exception e) {}
 			if (slidesFragment != null && codeFragment != null) {
 				// Get all slides from code fragment and update slides fragment
 				List<String> allSlides = codeFragment.getAllSlides();
@@ -238,6 +244,8 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 		} catch (JSONException e) {
 			Log.e("SlideActivity", "JSON parsing error: " + e.getMessage());
 			Toast.makeText(this, "Invalid JSON format: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+		} catch (Exception e) {
+			// Ignore
 		}
 	}
 
@@ -275,7 +283,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 						JSONObject slideData = new JSONObject(jsonStr);
 						
 						// Add to code fragment
-						ensureFragmentReferences();
+						try { ensureFragmentReferences(); } catch (Exception e) {}
 						if (codeFragment != null) {
 							codeFragment.addSlideFromJson(jsonStr);
 							
@@ -310,6 +318,8 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 						if (chatFragment != null) {
 							chatFragment.addAiResponse("I generated a slide, but there was an error parsing the JSON. Please check the Code tab and fix any formatting issues.");
 						}
+					} catch (Exception e) {
+						// Ignore
 					}
 				}
 
@@ -384,7 +394,11 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 
 	@Override
 	public boolean onSupportNavigateUp() {
-		finish();
+		try {
+			finish();
+		} catch (Exception e) {
+			// Ignore
+		}
 		return true;
 	}
 

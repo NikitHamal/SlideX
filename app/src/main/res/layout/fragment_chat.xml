@@ -9,36 +9,47 @@
         android:id="@+id/chat_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/input_layout"
+        android:layout_above="@+id/bottom_area_layout"
         android:clipToPadding="false"
         android:padding="8dp" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/model_selector_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/input_layout"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="8dp"
-        android:text="Gemini"
-        android:textSize="12sp"
-        app:cornerRadius="30dp" />
+    <com.google.android.material.divider.MaterialDivider
+        android:id="@+id/chat_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_alignParentBottom="true"
+        android:layout_above="@+id/bottom_area_layout"
+        app:dividerColor="@color/md_theme_outlineVariant" />
 
     <LinearLayout
-        android:id="@+id/input_layout"
+        android:id="@+id/bottom_area_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:background="@color/md_theme_surface"
-        android:elevation="0dp"
-        android:gravity="center_vertical"
+        android:elevation="2dp"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:gravity="center_vertical">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/model_selector_button"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="Gemini"
+            android:textSize="12sp"
+            app:cornerRadius="20dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginEnd="8dp"
+            android:minWidth="72dp" />
 
         <EditText
             android:id="@+id/chat_input"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
             android:background="@android:color/transparent"
             android:hint="Describe your slide..."
@@ -55,8 +66,9 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_send"
-            app:tint="?attr/colorPrimary" />
-
+            app:tint="?attr/colorPrimary"
+            android:layout_gravity="center_vertical"
+            android:contentDescription="Send" />
     </LinearLayout>
 
 </RelativeLayout>

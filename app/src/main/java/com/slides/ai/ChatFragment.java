@@ -28,8 +28,26 @@ public class ChatFragment extends Fragment {
     private EditText chatInput;
     private ImageButton sendButton;
     private Button modelSelectorButton;
-    private String selectedModel = "Gemini";
+    private String selectedModel = "Gemini-2.0-Flash";
+    private String selectedQwenModel = "qwen3-235b-a22b";
     private QwenManager qwenManager;
+    // Qwen models (hardcoded from qwen_thinking_search.txt)
+    private static final String[] QWEN_MODELS = {
+        "qwen3-235b-a22b",
+        "qwen3-coder-plus",
+        "qwen3-30b-a3b",
+        "qwen3-32b",
+        "qwen-max-latest",
+        "qwen-plus-2025-01-25",
+        "qwq-32b",
+        "qwen-turbo-2025-02-11",
+        "qwen2.5-omni-7b",
+        "qvq-72b-preview-0310",
+        "qwen2.5-vl-32b-instruct",
+        "qwen2.5-14b-instruct-1m",
+        "qwen2.5-coder-32b-instruct",
+        "qwen2.5-72b-instruct"
+    };
     
     private ChatInteractionListener chatInteractionListener;
 
@@ -84,21 +102,23 @@ public class ChatFragment extends Fragment {
     private void sendMessage(String message) {
         // Add user message to chat
         addUserMessage(message);
-        
         // Show typing indicator
         addAiMessage("Creating your slide...");
-        
-        if (selectedModel.equals("Qwen")) {
+        if (selectedModel.startsWith("Qwen")) {
             qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
                 @Override
                 public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
                     if (response.success) {
-                        qwenManager.getCompletion(response.data.id, message, new QwenManager.QwenCallback<String>() {
+                        qwenManager.getCompletionStreaming(response.data.id, message, selectedQwenModel, new QwenManager.QwenStreamingCallback() {
                             @Override
-                            public void onSuccess(String completion) {
-                                addAiResponse(completion);
+                            public void onStream(String partial) {
+                                // Append streaming response
+                                updateLastAiMessage(partial);
                             }
-
+                            @Override
+                            public void onComplete(String full) {
+                                updateLastAiMessage(full);
+                            }
                             @Override
                             public void onError(String error) {
                                 addAiResponse("Error: " + error);
@@ -108,12 +128,11 @@ public class ChatFragment extends Fragment {
                         addAiResponse("Error creating new chat.");
                     }
                 }
-
                 @Override
                 public void onError(String error) {
                     addAiResponse("Error: " + error);
                 }
-            });
+            }, selectedQwenModel);
         } else {
             // Send to parent activity for processing
             if (chatInteractionListener != null) {
@@ -148,16 +167,44 @@ public class ChatFragment extends Fragment {
     }
 
     private void showModelSelectionDialog() {
-        final String[] models = {"Gemini", "Qwen"};
-        int checkedItem = selectedModel.equals("Qwen") ? 1 : 0;
-
+        final String[] models = new String[QWEN_MODELS.length + 1];
+        models[0] = "Gemini-2.0-Flash";
+        for (int i = 0; i < QWEN_MODELS.length; i++) {
+            models[i + 1] = "Qwen: " + QWEN_MODELS[i];
+        }
+        int checkedItem = 0;
+        if (!selectedModel.equals("Gemini-2.0-Flash")) {
+            for (int i = 0; i < QWEN_MODELS.length; i++) {
+                if (selectedQwenModel.equals(QWEN_MODELS[i])) {
+                    checkedItem = i + 1;
+                    break;
+                }
+            }
+        }
         new MaterialAlertDialogBuilder(getContext())
                 .setTitle("Select Model")
                 .setSingleChoiceItems(models, checkedItem, (dialog, which) -> {
-                    selectedModel = models[which];
-                    modelSelectorButton.setText(selectedModel);
+                    if (which == 0) {
+                        selectedModel = "Gemini-2.0-Flash";
+                        modelSelectorButton.setText("Gemini-2.0-Flash");
+                    } else {
+                        selectedModel = "Qwen: " + QWEN_MODELS[which - 1];
+                        selectedQwenModel = QWEN_MODELS[which - 1];
+                        modelSelectorButton.setText(selectedQwenModel);
+                    }
                     dialog.dismiss();
                 })
                 .show();
+    }
+    // Add this method to update the last AI message (for streaming)
+    private void updateLastAiMessage(String message) {
+        if (!chatMessages.isEmpty()) {
+            ChatMessage lastMessage = chatMessages.get(chatMessages.size() - 1);
+            if (!lastMessage.isUser()) {
+                lastMessage.setText(message);
+                chatAdapter.notifyItemChanged(chatMessages.size() - 1);
+                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+            }
+        }
     }
 }

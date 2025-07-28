@@ -23,7 +23,11 @@ public class DebugActivity extends AppCompatActivity {
         Button copyButton = findViewById(R.id.copy_button);
 
         String logs = getIntent().getStringExtra(EXTRA_LOGS);
+        if (logs == null || logs.isEmpty()) {
+            logs = "No logs available. If you encountered a crash, please try to reproduce it.";
+        }
         logsTextView.setText(logs);
+        logsTextView.setMovementMethod(new android.text.method.ScrollingMovementMethod());
 
         copyButton.setOnClickListener(v -> {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);

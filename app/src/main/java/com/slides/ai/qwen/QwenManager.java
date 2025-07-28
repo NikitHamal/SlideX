@@ -26,13 +26,19 @@ public class QwenManager {
         void onError(String message);
     }
 
+    public interface QwenStreamingCallback {
+        void onStream(String partial);
+        void onComplete(String full);
+        void onError(String message);
+    }
+
     public QwenManager(ApiKeyManager apiKeyManager, Handler mainHandler, ExecutorService executorService) {
         this.apiKeyManager = apiKeyManager;
         this.mainHandler = mainHandler;
         this.executorService = executorService;
     }
 
-    public void createNewChat(QwenCallback<QwenNewChatResponse> callback) {
+    public void createNewChat(QwenCallback<QwenNewChatResponse> callback, String model) {
         executorService.execute(() -> {
             try {
                 URL url = new URL(NEW_CHAT_URL);
@@ -43,7 +49,7 @@ public class QwenManager {
                 connection.setDoOutput(true);
 
                 List<String> models = new ArrayList<>();
-                models.add("qwen3-235b-a22b");
+                models.add(model);
                 QwenNewChatRequest request = new QwenNewChatRequest("New Chat", models, "normal", "t2t", System.currentTimeMillis());
                 String requestBody = gson.toJson(request);
 
@@ -68,7 +74,7 @@ public class QwenManager {
         });
     }
 
-    public void getCompletion(String chatId, String prompt, QwenCallback<String> callback) {
+    public void getCompletionStreaming(String chatId, String prompt, String model, QwenStreamingCallback callback) {
         executorService.execute(() -> {
             try {
                 URL url = new URL(COMPLETION_URL + chatId);
@@ -83,7 +89,7 @@ public class QwenManager {
                 request.incremental_output = true;
                 request.chat_id = chatId;
                 request.chat_mode = "normal";
-                request.model = "qwen3-235b-a22b";
+                request.model = model;
                 request.messages = new ArrayList<>();
                 QwenCompletionRequest.Message message = new QwenCompletionRequest.Message();
                 message.role = "user";
@@ -102,14 +108,34 @@ public class QwenManager {
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                     String line;
-                    StringBuilder response = new StringBuilder();
+                    StringBuilder fullResponse = new StringBuilder();
+                    StringBuilder currentContent = new StringBuilder();
                     while ((line = reader.readLine()) != null) {
                         if (line.startsWith("data:")) {
                             String json = line.substring(5).trim();
-                            response.append(json);
+                            if (json.isEmpty() || json.equals("[DONE]")) continue;
+                            try {
+                                // Try to parse the streaming delta
+                                com.google.gson.JsonObject obj = gson.fromJson(json, com.google.gson.JsonObject.class);
+                                if (obj.has("choices")) {
+                                    com.google.gson.JsonArray choices = obj.getAsJsonArray("choices");
+                                    if (choices.size() > 0) {
+                                        com.google.gson.JsonObject delta = choices.get(0).getAsJsonObject().getAsJsonObject("delta");
+                                        if (delta != null && delta.has("content")) {
+                                            String content = delta.get("content").getAsString();
+                                            currentContent.append(content);
+                                            String partial = currentContent.toString();
+                                            mainHandler.post(() -> callback.onStream(partial));
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                // Ignore parse errors for non-delta lines
+                            }
+                            fullResponse.append(json);
                         }
                     }
-                    mainHandler.post(() -> callback.onSuccess(response.toString()));
+                    mainHandler.post(() -> callback.onComplete(currentContent.toString()));
                     reader.close();
                 } else {
                     mainHandler.post(() -> callback.onError("Error: " + responseCode));
