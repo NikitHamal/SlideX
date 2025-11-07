@@ -313,7 +313,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
                             handleSuccessfulResponse(jsonStr);
                         } catch (Exception e) {
                             Log.e("SlideActivity", "Error extracting JSON from Qwen response", e);
-                            handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage());
+                            handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage() + "\n\n" + jsonResponse);
                         }
                     }
 
