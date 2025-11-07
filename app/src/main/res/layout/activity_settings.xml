@@ -33,6 +33,15 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="General"
+                android:textSize="16sp"
+                android:textColor="@color/md_theme_primary"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="sans-serif-medium" />
+
             <!-- Theme Section -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/themeCard"
@@ -163,6 +172,76 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:text="Learn about JSON codes and more"
+                            android:textColor="@color/md_theme_onSurfaceVariant"
+                            android:textSize="14sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Account"
+                android:textSize="16sp"
+                android:textColor="@color/md_theme_primary"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="sans-serif-medium" />
+
+
+            <!-- Qwen Login Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/qwenLoginCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/md_theme_outline"
+                app:cardBackgroundColor="@color/md_theme_surface">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="24dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginEnd="16dp"
+                        android:src="@drawable/ic_person"
+                        android:tint="@color/md_theme_primary" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Qwen Login"
+                            android:textColor="@color/md_theme_onSurface"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <TextView
+                            android:id="@+id/qwenLoginStatusText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Not Logged In"
                             android:textColor="@color/md_theme_onSurfaceVariant"
                             android:textSize="14sp" />
 
