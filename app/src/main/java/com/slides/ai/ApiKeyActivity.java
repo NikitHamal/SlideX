@@ -34,11 +34,6 @@ public class ApiKeyActivity extends AppCompatActivity {
     private ApiKeyManager apiKeyManager;
     private View emptyState;
     
-    // Qwen token section
-    private MaterialCardView qwenTokenCard;
-    private TextView qwenTokenStatus;
-    private MaterialButton btnAddQwenToken;
-    private MaterialButton btnRemoveQwenToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,10 +42,8 @@ public class ApiKeyActivity extends AppCompatActivity {
 
         initViews();
         setupRecyclerView();
-        setupQwenTokenSection();
         loadApiKeys();
         updateEmptyState();
-        updateQwenTokenStatus();
     }
 
     private void initViews() {
@@ -59,11 +52,6 @@ public class ApiKeyActivity extends AppCompatActivity {
         emptyState = findViewById(R.id.empty_state);
         FloatingActionButton addFab = findViewById(R.id.add_api_key_fab);
         
-        // Qwen token views
-        qwenTokenCard = findViewById(R.id.qwen_token_card);
-        qwenTokenStatus = findViewById(R.id.qwen_token_status);
-        btnAddQwenToken = findViewById(R.id.btn_add_qwen_token);
-        btnRemoveQwenToken = findViewById(R.id.btn_remove_qwen_token);
 
         // Setup toolbar
         setSupportActionBar(toolbar);
@@ -92,68 +80,6 @@ public class ApiKeyActivity extends AppCompatActivity {
         });
     }
 
-    private void setupQwenTokenSection() {
-        btnAddQwenToken.setOnClickListener(v -> showAddQwenTokenDialog());
-        btnRemoveQwenToken.setOnClickListener(v -> showRemoveQwenTokenDialog());
-    }
-
-    private void updateQwenTokenStatus() {
-        if (apiKeyManager.hasQwenToken()) {
-            qwenTokenStatus.setText("Qwen token configured");
-            btnAddQwenToken.setText("Update Token");
-            btnRemoveQwenToken.setVisibility(View.VISIBLE);
-        } else {
-            qwenTokenStatus.setText("No Qwen token configured");
-            btnAddQwenToken.setText("Add Token");
-            btnRemoveQwenToken.setVisibility(View.GONE);
-        }
-    }
-
-    private void showAddQwenTokenDialog() {
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this,
-                R.style.ThemeOverlay_Material3_MaterialAlertDialog_Centered);
-        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_qwen_token, null);
-
-        TextInputEditText tokenEdit = dialogView.findViewById(R.id.tokenEdit);
-        
-        // Pre-fill with existing token if available
-        String existingToken = apiKeyManager.getQwenToken();
-        if (existingToken != null && !existingToken.isEmpty()) {
-            tokenEdit.setText(existingToken);
-        }
-
-        builder.setTitle(apiKeyManager.hasQwenToken() ? "Update Qwen Token" : "Add Qwen Token")
-                .setMessage("Enter your Qwen chat token to use Qwen models")
-                .setView(dialogView)
-                .setPositiveButton(apiKeyManager.hasQwenToken() ? "Update" : "Add", (dialog, which) -> {
-                    String token = tokenEdit.getText().toString().trim();
-
-                    if (token.isEmpty()) {
-                        Toast.makeText(this, "Token cannot be empty", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    apiKeyManager.saveQwenToken(token);
-                    updateQwenTokenStatus();
-                    Toast.makeText(this, "Qwen token saved successfully", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-
-    private void showRemoveQwenTokenDialog() {
-        new MaterialAlertDialogBuilder(this,
-                R.style.ThemeOverlay_Material3_MaterialAlertDialog_Centered)
-                .setTitle("Remove Qwen Token")
-                .setMessage("Are you sure you want to remove the Qwen token? You won't be able to use Qwen models without it.")
-                .setPositiveButton("Remove", (dialog, which) -> {
-                    apiKeyManager.removeQwenToken();
-                    updateQwenTokenStatus();
-                    Toast.makeText(this, "Qwen token removed", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
 
     private void loadApiKeys() {
         apiKeys = apiKeyManager.getApiKeyObjects();

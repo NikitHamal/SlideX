@@ -37,56 +37,92 @@ public class QwenManager {
         this.executorService = executorService;
     }
 
-    public void createNewChat(QwenCallback<QwenNewChatResponse> callback) {
+    private String midtoken;
+    private int midtokenUses = 0;
+
+    private void fetchMidtoken(QwenCallback<?> callback) {
+        try {
+            URL url = new URL("https://sg-wum.alibaba.com/w/wu.json");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                String line;
+                StringBuilder response = new StringBuilder();
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+
+                // Extract midtoken using regex
+                String responseString = response.toString();
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("(?:umx\\.wu|__fycb)\\('([^']+)'\\)");
+                java.util.regex.Matcher matcher = pattern.matcher(responseString);
+                if (matcher.find()) {
+                    midtoken = matcher.group(1);
+                    midtokenUses = 1;
+                } else {
+                    mainHandler.post(() -> callback.onError("Failed to extract midtoken."));
+                }
+            } else {
+                mainHandler.post(() -> callback.onError("Failed to fetch midtoken: " + responseCode));
+            }
+            connection.disconnect();
+        } catch (Exception e) {
+            mainHandler.post(() -> callback.onError("Failed to fetch midtoken: " + e.getMessage()));
+        }
+    }
+
+    public void createNewChat(String prompt, float canvasWidth, float canvasHeight, QwenCallback<String> callback) {
         executorService.execute(() -> {
             try {
-                // Get API key from manager - using Qwen token
-                String qwenToken = apiKeyManager.getQwenToken();
-                if (qwenToken == null || qwenToken.isEmpty()) {
-                    mainHandler.post(() -> callback.onError("No Qwen API token available. Please add it in Settings."));
-                    return;
+                if (midtoken == null || midtokenUses >= 5) {
+                    fetchMidtoken(callback);
+                    if (midtoken == null) {
+                        return; // fetchMidtoken will post error
+                    }
+                } else {
+                    midtokenUses++;
                 }
 
                 URL url = new URL(NEW_CHAT_URL);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("Authorization", "Bearer " + qwenToken);
+                connection.setRequestProperty("Authorization", "Bearer");
+                connection.setRequestProperty("bx-umidtoken", midtoken);
+                connection.setRequestProperty("bx-v", "2.5.31");
                 connection.setDoOutput(true);
 
+                // Create new chat
                 List<String> models = new ArrayList<>();
                 models.add("qwen3-235b-a22b");
-                QwenNewChatRequest request = new QwenNewChatRequest("AI Slide Generator", models, "normal", "t2t", System.currentTimeMillis());
-                String requestBody = gson.toJson(request);
+                QwenNewChatRequest newChatRequest = new QwenNewChatRequest("AI Slide Generator", models, "normal", "t2t", System.currentTimeMillis());
+                String newChatRequestBody = gson.toJson(newChatRequest);
 
                 OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
-                writer.write(requestBody);
+                writer.write(newChatRequestBody);
                 writer.flush();
                 writer.close();
 
-                int responseCode = connection.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    QwenNewChatResponse response = gson.fromJson(reader, QwenNewChatResponse.class);
-                    
-                    // Store chat ID for conversation context
-                    if (response.success && response.data != null) {
-                        currentChatId = response.data.id;
+                int newChatResponseCode = connection.getResponseCode();
+                if (newChatResponseCode == HttpURLConnection.HTTP_OK) {
+                    BufferedReader newChatReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    QwenNewChatResponse newChatResponse = gson.fromJson(newChatReader, QwenNewChatResponse.class);
+                    newChatReader.close();
+
+                    if (newChatResponse.success && newChatResponse.data != null) {
+                        currentChatId = newChatResponse.data.id;
                         lastParentId = null;
                         conversationHistory.clear();
+                        getCompletion(currentChatId, null, prompt, "qwen3-235b-a22b", canvasWidth, canvasHeight, callback);
+                    } else {
+                        mainHandler.post(() -> callback.onError("Failed to create new chat."));
                     }
-                    
-                    mainHandler.post(() -> callback.onSuccess(response));
-                    reader.close();
                 } else {
-                    BufferedReader errorReader = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
-                    StringBuilder errorResponse = new StringBuilder();
-                    String errorLine;
-                    while ((errorLine = errorReader.readLine()) != null) {
-                        errorResponse.append(errorLine);
-                    }
-                    errorReader.close();
-                    mainHandler.post(() -> callback.onError("Error: " + responseCode + " - " + errorResponse.toString()));
+                    mainHandler.post(() -> callback.onError("Failed to create new chat: " + newChatResponseCode));
                 }
                 connection.disconnect();
             } catch (Exception e) {
@@ -98,13 +134,6 @@ public class QwenManager {
     public void getCompletion(String chatId, String parentId, String prompt, String model, float canvasWidth, float canvasHeight, QwenCallback<String> callback) {
         executorService.execute(() -> {
             try {
-                // Get API key from manager
-                String qwenToken = apiKeyManager.getQwenToken();
-                if (qwenToken == null || qwenToken.isEmpty()) {
-                    mainHandler.post(() -> callback.onError("No Qwen API token available. Please add it in Settings."));
-                    return;
-                }
-
                 // Use stored chat ID if available, otherwise use provided one
                 String activeChatId = currentChatId != null ? currentChatId : chatId;
 
@@ -112,7 +141,9 @@ public class QwenManager {
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("Authorization", "Bearer " + qwenToken);
+                connection.setRequestProperty("Authorization", "Bearer");
+                connection.setRequestProperty("bx-umidtoken", midtoken);
+                connection.setRequestProperty("bx-v", "2.5.31");
                 connection.setDoOutput(true);
 
                 QwenCompletionRequest request = new QwenCompletionRequest();
@@ -161,7 +192,7 @@ public class QwenManager {
                     String line;
                     StringBuilder fullResponse = new StringBuilder();
                     String responseId = null;
-                    
+
                     while ((line = reader.readLine()) != null) {
                         if (line.startsWith("data:")) {
                             String json = line.substring(5).trim();
@@ -173,10 +204,10 @@ public class QwenManager {
                                         if (response.response_created != null && response.response_created.response_id != null) {
                                             responseId = response.response_created.response_id;
                                         }
-                                        
+
                                         if (response.choices != null && !response.choices.isEmpty()) {
                                             QwenCompletionResponse.Delta delta = response.choices.get(0).delta;
-                                            if (delta != null && delta.content != null && 
+                                            if (delta != null && delta.content != null &&
                                                 "answer".equals(delta.phase)) { // Only collect answer phase content
                                                 fullResponse.append(delta.content);
                                             }
@@ -188,14 +219,14 @@ public class QwenManager {
                             }
                         }
                     }
-                    
+
                     // Update conversation context
                     if (responseId != null) {
                         lastParentId = responseId;
-                        
+
                         // Add user message to history
                         conversationHistory.add(message);
-                        
+
                         // Add AI response to history
                         QwenCompletionRequest.Message aiMessage = new QwenCompletionRequest.Message();
                         aiMessage.role = "assistant";
@@ -203,14 +234,14 @@ public class QwenManager {
                         aiMessage.timestamp = System.currentTimeMillis();
                         aiMessage.parent_id = lastParentId;
                         conversationHistory.add(aiMessage);
-                        
+
                         // Keep conversation history manageable (last 10 messages)
                         if (conversationHistory.size() > 10) {
                             conversationHistory = conversationHistory.subList(
                                 conversationHistory.size() - 10, conversationHistory.size());
                         }
                     }
-                    
+
                     mainHandler.post(() -> callback.onSuccess(fullResponse.toString()));
                     reader.close();
                 } else {
