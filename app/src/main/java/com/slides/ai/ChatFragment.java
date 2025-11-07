@@ -12,8 +12,6 @@ import androidx.annotation.NonNull;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import com.slides.ai.qwen.QwenManager;
-import java.util.concurrent.Executors;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -128,20 +126,10 @@ public class ChatFragment extends Fragment {
     private void showModelSelectionDialog() {
         final String[] models = {
             "gemini-2.0-flash",
-            "qwen3-coder-plus",
-            "qwen3-235b-a22b",
-            "qwen3-30b-a3b",
-            "qwen3-32b",
-            "qwen-max-latest",
-            "qwen-plus-2025-01-25",
-            "qwq-32b",
-            "qwen-turbo-2025-02-11",
-            "qwen2.5-omni-7b",
-            "qvq-72b-preview-0310",
-            "qwen2.5-vl-32b-instruct",
-            "qwen2.5-14b-instruct-1m",
-            "qwen2.5-coder-32b-instruct",
-            "qwen2.5-72b-instruct"
+            "qwen-turbo",
+            "qwen-plus",
+            "qwen-max",
+            "qwen-max-longcontext"
         };
         int checkedItem = -1;
         for (int i = 0; i < models.length; i++) {

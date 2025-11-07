@@ -16,13 +16,18 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.slides.ai.qwen.auth.TokenManager;
 
+import java.util.List;
+
 public class SettingsActivity extends AppCompatActivity {
     private MaterialToolbar toolbar;
     private MaterialCardView themeCard;
+    private MaterialCardView apiKeysCard;
     private MaterialCardView qwenLoginCard;
     private MaterialCardView aboutCard;
     private AutoCompleteTextView themeSpinner;
+    private TextView apiKeysCountText;
     private TextView qwenLoginStatusText;
+    private ApiKeyManager apiKeyManager;
     private TokenManager tokenManager;
 
     @Override
@@ -32,6 +37,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         initViews();
         setupTheme();
+        setupApiKeys();
         setupQwenLogin();
         setupAbout();
     }
@@ -39,12 +45,14 @@ public class SettingsActivity extends AppCompatActivity {
     private void initViews() {
         toolbar = findViewById(R.id.toolbar);
         themeCard = findViewById(R.id.themeCard);
+        apiKeysCard = findViewById(R.id.apiKeysCard);
         qwenLoginCard = findViewById(R.id.qwenLoginCard);
         aboutCard = findViewById(R.id.aboutCard);
         findViewById(R.id.documentationCard).setOnClickListener(v -> {
             startActivity(new Intent(this, DocumentationActivity.class));
         });
         themeSpinner = findViewById(R.id.themeSpinner);
+        apiKeysCountText = findViewById(R.id.apiKeysCountText);
         qwenLoginStatusText = findViewById(R.id.qwenLoginStatusText);
 
         setSupportActionBar(toolbar);
@@ -55,6 +63,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         toolbar.setNavigationOnClickListener(v -> finish());
 
+        apiKeyManager = new ApiKeyManager(this);
         tokenManager = new TokenManager(this);
     }
 
@@ -72,6 +81,20 @@ public class SettingsActivity extends AppCompatActivity {
             // Recreate activity to apply theme immediately
             recreate();
         });
+    }
+
+    private void setupApiKeys() {
+        updateApiKeysCount();
+
+        apiKeysCard.setOnClickListener(v -> {
+            startActivity(new Intent(this, ApiKeyActivity.class));
+        });
+    }
+
+    private void updateApiKeysCount() {
+        List<ApiKeyManager.ApiKey> keys = apiKeyManager.getApiKeyObjects();
+        String countText = keys.size() + " API key" + (keys.size() != 1 ? "s" : "");
+        apiKeysCountText.setText(countText);
     }
 
     private void setupQwenLogin() {
