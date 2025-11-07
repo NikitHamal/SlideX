@@ -86,7 +86,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 
 	private SlideRenderer slideRenderer;
 	private NetworkManager networkManager;
-	private QwenManager qwenManager;
+	private DeepInfraManager deepInfraManager;
 	private CustomizationManager customizationManager;
 	private ApiKeyManager apiKeyManager;
 
@@ -123,7 +123,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 
 		apiKeyManager = new ApiKeyManager(this);
 		networkManager = new NetworkManager(apiKeyManager, imageCache, mainHandler, executorService);
-		qwenManager = new QwenManager(apiKeyManager, mainHandler, executorService);
+		deepInfraManager = new DeepInfraManager(mainHandler, executorService);
 
 		// Initialize slide renderer once we have the slides fragment
 		setupSlideRenderer();
@@ -304,28 +304,28 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
                 handleErrorResponse("Network manager not available.");
             }
         } else if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq")) {
-            if (qwenManager != null) {
-                qwenManager.createNewChat(prompt, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new QwenManager.QwenCallback<String>() {
+            if (deepInfraManager != null) {
+                deepInfraManager.getCompletion(prompt, selectedModel, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new DeepInfraManager.DeepInfraCallback<String>() {
                     @Override
                     public void onSuccess(String jsonResponse) {
                         try {
                             String jsonStr = extractJsonFromResponse(jsonResponse);
                             handleSuccessfulResponse(jsonStr);
                         } catch (Exception e) {
-                            Log.e("SlideActivity", "Error extracting JSON from Qwen response", e);
-                            handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage() + "\n\n" + jsonResponse);
+                            Log.e("SlideActivity", "Error extracting JSON from DeepInfra response", e);
+                            handleErrorResponse("Error extracting JSON from DeepInfra response: " + e.getMessage() + "\n\n" + jsonResponse);
                         }
                     }
 
                     @Override
                     public void onError(String error) {
-                        Log.e("SlideActivity", "Qwen completion error: " + error);
-                        handleErrorResponse("Qwen API error: " + error);
+                        Log.e("SlideActivity", "DeepInfra completion error: " + error);
+                        handleErrorResponse("DeepInfra API error: " + error);
                     }
                 });
             } else {
-                Log.e("SlideActivity", "QwenManager is null");
-                handleErrorResponse("Qwen manager not available. Please restart the app.");
+                Log.e("SlideActivity", "DeepInfraManager is null");
+                handleErrorResponse("DeepInfra manager not available. Please restart the app.");
             }
         }
 	}
