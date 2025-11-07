@@ -402,7 +402,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
                     @Override
                     public void onError(String message) {
                         if ("pending".equals(message)) {
-                            pollingHandler.postDelayed(this, Math.max(interval, 5) * 1000); // Ensure interval is at least 5s
+                            pollingHandler.postDelayed(pollingRunnable, Math.max(interval, 5) * 1000); // Ensure interval is at least 5s
                         } else {
                              if (loginDialog != null && loginDialog.isShowing()) {
                                 loginDialog.dismiss();
