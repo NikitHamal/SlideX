@@ -191,9 +191,11 @@ public class QwenManager {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                     String line;
                     StringBuilder fullResponse = new StringBuilder();
+                    StringBuilder rawResponse = new StringBuilder();
                     String responseId = null;
 
                     while ((line = reader.readLine()) != null) {
+                        rawResponse.append(line).append("\n");
                         if (line.startsWith("data:")) {
                             String json = line.substring(5).trim();
                             if (!json.isEmpty() && !json.equals("[DONE]")) {
@@ -219,6 +221,12 @@ public class QwenManager {
                             }
                         }
                     }
+                    reader.close();
+
+                    if (fullResponse.length() == 0 && rawResponse.length() > 0) {
+                        mainHandler.post(() -> callback.onError("Received an unparsable response from the server:\n\n" + rawResponse.toString()));
+                        return;
+                    }
 
                     // Update conversation context
                     if (responseId != null) {
@@ -243,7 +251,6 @@ public class QwenManager {
                     }
 
                     mainHandler.post(() -> callback.onSuccess(fullResponse.toString()));
-                    reader.close();
                 } else {
                     BufferedReader errorReader = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
                     StringBuilder errorResponse = new StringBuilder();
