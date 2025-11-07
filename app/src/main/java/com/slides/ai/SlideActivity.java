@@ -18,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -64,6 +65,8 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.slides.ai.qwen.QwenManager;
+import com.slides.ai.qwen.auth.QwenAuth;
+import com.slides.ai.qwen.auth.TokenManager;
 
 public class SlideActivity extends AppCompatActivity implements SlideRenderer.ElementSelectionListener,
 CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener,
@@ -87,6 +90,8 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	private SlideRenderer slideRenderer;
 	private NetworkManager networkManager;
 	private QwenManager qwenManager;
+    private QwenAuth qwenAuth;
+    private TokenManager tokenManager;
 	private CustomizationManager customizationManager;
 	private ApiKeyManager apiKeyManager;
 
@@ -105,6 +110,11 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	private CodeFragment codeFragment;
 	private ChatFragment chatFragment;
 
+    private AlertDialog loginDialog;
+    private Handler pollingHandler = new Handler(Looper.getMainLooper());
+    private Runnable pollingRunnable;
+
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -122,8 +132,10 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 		executorService = Executors.newCachedThreadPool();
 
 		apiKeyManager = new ApiKeyManager(this);
+        tokenManager = new TokenManager(this);
+        qwenAuth = new QwenAuth();
 		networkManager = new NetworkManager(apiKeyManager, imageCache, mainHandler, executorService);
-		qwenManager = new QwenManager(apiKeyManager, mainHandler, executorService);
+		qwenManager = new QwenManager(this);
 
 		// Initialize slide renderer once we have the slides fragment
 		setupSlideRenderer();
@@ -303,47 +315,28 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
             } else {
                 handleErrorResponse("Network manager not available.");
             }
-        } else if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq")) {
+        } else if (selectedModel.startsWith("qwen")) {
             if (qwenManager != null) {
-                // Check if we have a Qwen token first
-                String qwenToken = apiKeyManager.getQwenToken();
-                if (qwenToken == null || qwenToken.trim().isEmpty()) {
-                    handleErrorResponse("No Qwen API token available. Please add your token from chat.qwen.ai in Settings → API Keys.");
-                    return;
-                }
-                
-                qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
+                qwenManager.getCompletion(prompt, selectedModel, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new QwenManager.QwenCallback<String>() {
                     @Override
-                    public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
-                        if (response != null && response.success && response.data != null) {
-                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new QwenManager.QwenCallback<String>() {
-                                @Override
-                                public void onSuccess(String jsonResponse) {
-                                    try {
-                                        String jsonStr = extractJsonFromResponse(jsonResponse);
-                                        handleSuccessfulResponse(jsonStr);
-                                    } catch (Exception e) {
-                                        Log.e("SlideActivity", "Error extracting JSON from Qwen response", e);
-                                        handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage());
-                                    }
-                                }
-
-                                @Override
-                                public void onError(String error) {
-                                    Log.e("SlideActivity", "Qwen completion error: " + error);
-                                    handleErrorResponse("Qwen API error: " + error);
-                                }
-                            });
-                        } else {
-                            Log.e("SlideActivity", "Qwen new chat response invalid: " + (response != null ? response.toString() : "null"));
-                            handleErrorResponse("Error creating new Qwen chat session.");
+                    public void onSuccess(String jsonResponse) {
+                        try {
+                            String jsonStr = extractJsonFromResponse(jsonResponse);
+                            handleSuccessfulResponse(jsonStr);
+                        } catch (Exception e) {
+                            Log.e("SlideActivity", "Error extracting JSON from Qwen response", e);
+                            handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage());
                         }
                     }
 
                     @Override
                     public void onError(String error) {
-                        Log.e("SlideActivity", "Qwen new chat error: " + error);
-                        handleErrorResponse("Qwen API error: " + error);
+                        if (error.contains("log in")) {
+                            promptUserToLogin();
+                        } else {
+                            Log.e("SlideActivity", "Qwen completion error: " + error);
+                            handleErrorResponse("Qwen API error: " + error);
+                        }
                     }
                 });
             } else {
@@ -352,6 +345,77 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
             }
         }
 	}
+
+    private void promptUserToLogin() {
+        QwenAuth.PKCE pkce = qwenAuth.generatePKCEPair();
+
+        qwenAuth.requestDeviceAuthorization(pkce, new QwenAuth.AuthCallback<QwenAuth.DeviceAuthResponse>() {
+            @Override
+            public void onSuccess(QwenAuth.DeviceAuthResponse response) {
+                showLoginDialog(response.verificationUri, response.userCode, response.deviceCode, pkce.codeVerifier, response.interval);
+            }
+
+            @Override
+            public void onError(String message) {
+                handleErrorResponse("Failed to start login process: " + message);
+            }
+        });
+    }
+
+    private void showLoginDialog(String verificationUri, String userCode, String deviceCode, String codeVerifier, int interval) {
+        if (loginDialog != null && loginDialog.isShowing()) {
+            loginDialog.dismiss();
+        }
+
+        loginDialog = new MaterialAlertDialogBuilder(this)
+                .setTitle("Login to Qwen")
+                .setMessage("To continue, please open the following URL in a browser and enter the code:\n\nURL: " + verificationUri + "\nCode: " + userCode)
+                .setPositiveButton("Copy Code", (dialog, which) -> {
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                    android.content.ClipData clip = android.content.ClipData.newPlainText("Qwen Code", userCode);
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(this, "Code copied to clipboard", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                     pollingHandler.removeCallbacks(pollingRunnable);
+                })
+                .setCancelable(false)
+                .show();
+
+        pollForToken(deviceCode, codeVerifier, interval);
+    }
+
+    private void pollForToken(String deviceCode, String codeVerifier, int interval) {
+         pollingRunnable = new Runnable() {
+            @Override
+            public void run() {
+                qwenAuth.pollDeviceToken(deviceCode, codeVerifier, new QwenAuth.AuthCallback<QwenAuth.TokenResponse>() {
+                    @Override
+                    public void onSuccess(QwenAuth.TokenResponse response) {
+                        tokenManager.saveToken(response);
+                        if (loginDialog != null && loginDialog.isShowing()) {
+                            loginDialog.dismiss();
+                        }
+                        Toast.makeText(SlideActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        if ("pending".equals(message)) {
+                            pollingHandler.postDelayed(this, Math.max(interval, 5) * 1000); // Ensure interval is at least 5s
+                        } else {
+                             if (loginDialog != null && loginDialog.isShowing()) {
+                                loginDialog.dismiss();
+                            }
+                            handleErrorResponse("Login failed: " + message);
+                        }
+                    }
+                });
+            }
+        };
+        pollingHandler.postDelayed(pollingRunnable, Math.max(interval, 5) * 1000);
+    }
+
 
     private void handleSuccessfulResponse(String jsonStr) {
         try {
@@ -539,6 +603,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+        pollingHandler.removeCallbacks(pollingRunnable);
 		if (networkManager != null) {
 			networkManager.cleanup();
 		}
