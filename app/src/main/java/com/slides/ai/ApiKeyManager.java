@@ -20,7 +20,6 @@ public class ApiKeyManager {
     private static final String PREFS_NAME = "api_keys";
     private static final String KEYS_ARRAY = "keys_array";
     private static final String ENCRYPTION_KEY = "encryption_key";
-    private static final String QWEN_TOKEN = "qwen_token";
 
     private SharedPreferences sharedPreferences;
     private Context context;
@@ -185,30 +184,6 @@ public class ApiKeyManager {
         return keys.isEmpty() ? null : keys.get(0);
     }
 
-    public void saveQwenToken(String token) {
-        String encryptedToken = encrypt(token);
-        sharedPreferences.edit()
-                .putString(QWEN_TOKEN, encryptedToken)
-                .apply();
-    }
-
-    public String getQwenToken() {
-        String encryptedToken = sharedPreferences.getString(QWEN_TOKEN, null);
-        if (encryptedToken == null) {
-            return null;
-        }
-        return decrypt(encryptedToken);
-    }
-
-    public void removeQwenToken() {
-        sharedPreferences.edit()
-                .remove(QWEN_TOKEN)
-                .apply();
-    }
-
-    public boolean hasQwenToken() {
-        return sharedPreferences.contains(QWEN_TOKEN);
-    }
 
     public static class ApiKey {
         private String id;

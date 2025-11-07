@@ -53,6 +53,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         } else {
             Markwon markwon = Markwon.create(holder.itemView.getContext());
             markwon.setMarkdown(holder.messageText, message.getText());
+            holder.messageText.setOnLongClickListener(v -> {
+                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) v.getContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                android.content.ClipData clip = android.content.ClipData.newPlainText("Copied Text", holder.messageText.getText());
+                clipboard.setPrimaryClip(clip);
+                android.widget.Toast.makeText(v.getContext(), "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show();
+                return true;
+            });
         }
 
         int screenWidth = holder.itemView.getContext().getResources().getDisplayMetrics().widthPixels;
