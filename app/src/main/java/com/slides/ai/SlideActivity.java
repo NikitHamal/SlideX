@@ -86,7 +86,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 
 	private SlideRenderer slideRenderer;
 	private NetworkManager networkManager;
-	private DeepInfraManager deepInfraManager;
+	private QwenManager qwenManager;
 	private CustomizationManager customizationManager;
 	private ApiKeyManager apiKeyManager;
 
@@ -123,7 +123,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 
 		apiKeyManager = new ApiKeyManager(this);
 		networkManager = new NetworkManager(apiKeyManager, imageCache, mainHandler, executorService);
-		deepInfraManager = new DeepInfraManager(mainHandler, executorService);
+		qwenManager = new QwenManager(apiKeyManager, mainHandler, executorService);
 
 		// Initialize slide renderer once we have the slides fragment
 		setupSlideRenderer();
@@ -304,28 +304,51 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
                 handleErrorResponse("Network manager not available.");
             }
         } else if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq")) {
-            if (deepInfraManager != null) {
-                deepInfraManager.getCompletion(prompt, selectedModel, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new DeepInfraManager.DeepInfraCallback<String>() {
+            if (qwenManager != null) {
+                // Check if we have a Qwen token first
+                String qwenToken = apiKeyManager.getQwenToken();
+                if (qwenToken == null || qwenToken.trim().isEmpty()) {
+                    handleErrorResponse("No Qwen API token available. Please add your token from chat.qwen.ai in Settings → API Keys.");
+                    return;
+                }
+
+                qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
                     @Override
-                    public void onSuccess(String jsonResponse) {
-                        try {
-                            String jsonStr = extractJsonFromResponse(jsonResponse);
-                            handleSuccessfulResponse(jsonStr);
-                        } catch (Exception e) {
-                            Log.e("SlideActivity", "Error extracting JSON from DeepInfra response", e);
-                            handleErrorResponse("Error extracting JSON from DeepInfra response: " + e.getMessage() + "\n\n" + jsonResponse);
+                    public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
+                        if (response != null && response.success && response.data != null) {
+                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new QwenManager.QwenCallback<String>() {
+                                @Override
+                                public void onSuccess(String jsonResponse) {
+                                    try {
+                                        String jsonStr = extractJsonFromResponse(jsonResponse);
+                                        handleSuccessfulResponse(jsonStr);
+                                    } catch (Exception e) {
+                                        Log.e("SlideActivity", "Error extracting JSON from Qwen response", e);
+                                        handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage());
+                                    }
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.e("SlideActivity", "Qwen completion error: " + error);
+                                    handleErrorResponse("Qwen API error: " + error);
+                                }
+                            });
+                        } else {
+                            Log.e("SlideActivity", "Qwen new chat response invalid: " + (response != null ? response.toString() : "null"));
+                            handleErrorResponse("Error creating new Qwen chat session.");
                         }
                     }
 
                     @Override
                     public void onError(String error) {
-                        Log.e("SlideActivity", "DeepInfra completion error: " + error);
-                        handleErrorResponse("DeepInfra API error: " + error);
+                        Log.e("SlideActivity", "Qwen new chat error: " + error);
+                        handleErrorResponse("Qwen API error: " + error);
                     }
                 });
             } else {
-                Log.e("SlideActivity", "DeepInfraManager is null");
-                handleErrorResponse("DeepInfra manager not available. Please restart the app.");
+                Log.e("SlideActivity", "QwenManager is null");
+                handleErrorResponse("Qwen manager not available. Please restart the app.");
             }
         }
 	}
@@ -382,7 +405,15 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
     private void handleErrorResponse(String errorMessage) {
         Log.e("SlideActivity", "Chat API error: " + errorMessage);
         if (chatFragment != null) {
-            chatFragment.addAiResponse("An error occurred: " + errorMessage);
+            String userFriendlyMessage;
+            if (errorMessage.contains("API key")) {
+                userFriendlyMessage = "Please add a valid API key in Settings to use the AI chat feature.";
+            } else if (errorMessage.contains("quota") || errorMessage.contains("limit")) {
+                userFriendlyMessage = "API quota exceeded. Please try again later or check your API key limits.";
+            } else {
+                userFriendlyMessage = "Sorry, I couldn't process your request right now. Please try again or create slides manually using the Code tab.";
+            }
+            chatFragment.addAiResponse(userFriendlyMessage);
         }
     }
 
