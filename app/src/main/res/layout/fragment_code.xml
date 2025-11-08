@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/md_theme_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@color/md_theme_surface">
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/slides_tab_layout"
+                style="@style/Widget.Material3.TabLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:tabTextColor="@color/md_theme_onSurfaceVariant"
+                app:tabSelectedTextColor="@color/md_theme_primary"
+                app:tabIndicatorColor="@color/md_theme_primary"
+                app:tabIndicatorHeight="3dp"
+                app:tabMode="scrollable" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/add_slide_button"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="8dp"
+                app:icon="@drawable/ic_add"
+                app:iconSize="24dp"
+                app:iconTint="@color/md_theme_onSurface" />
+
+        </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/md_theme_outline"
+            app:cardBackgroundColor="@color/md_theme_surface">
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp">
+
+                <EditText
+                    android:id="@+id/code_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    android:gravity="top"
+                    android:hint="Enter your JSON code here..."
+                    android:textColorHint="@color/md_theme_onSurfaceVariant"
+                    android:textColor="@color/md_theme_onSurface"
+                    android:fontFamily="monospace"
+                    android:textSize="14sp"
+                    android:minHeight="400dp"
+                    android:inputType="textMultiLine|textNoSuggestions"
+                    android:scrollbars="vertical" />
+
+            </ScrollView>
+
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/save_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_play_arrow"
+        app:tint="@color/md_theme_onPrimary"
+        app:backgroundTint="@color/md_theme_primary" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -8,6 +8,7 @@ import android.graphics.Typeface;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -30,7 +31,7 @@ public class TextElement extends SlideElement {
 	public TextElement(JSONObject json, Context context) throws JSONException {
 		super(json, context);
 		this.context = context;
-		content = json.getString("content");
+		content = json.getString("text");
 		fontSize = json.optInt("fontSize", 14);
 		color = Color.parseColor(json.optString("color", "#000000"));
 		bold = json.optBoolean("bold", false);
@@ -108,7 +109,7 @@ public class TextElement extends SlideElement {
 		json.put("y", y);
 		json.put("width", width);
 		json.put("height", height);
-		json.put("content", content);
+		json.put("text", content);
 		json.put("fontSize", fontSize);
 		json.put("color", String.format("#%06X", (0xFFFFFF & color)));
 		json.put("bold", bold);
@@ -120,8 +121,10 @@ public class TextElement extends SlideElement {
 	
 	@Override
 	public void draw(Canvas canvas) {
+		Log.d("TextElement", "Drawing text element: " + content + " at (" + x + ", " + y + ") with width " + width + " and height " + height);
 		canvas.save();
 		canvas.translate(x, y);
+		canvas.rotate(rotation, width / 2, height / 2);
 		textLayout.draw(canvas);
 		canvas.restore();
 	}

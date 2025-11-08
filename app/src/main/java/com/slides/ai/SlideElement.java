@@ -10,7 +10,9 @@ import org.json.JSONObject;
  */
 public abstract class SlideElement {
     protected int x, y, width, height;
-    
+    public boolean lockAspectRatio = true;
+    public float rotation = 0;
+
     public SlideElement(JSONObject json, Context context) throws JSONException {
         x = dpToPx(json.getInt("x"), context);
         y = dpToPx(json.getInt("y"), context);
@@ -26,7 +28,10 @@ public abstract class SlideElement {
     
     // Helper method for dp to px conversion
     protected static int dpToPx(float dp, Context context) {
-        return (int) (dp * context.getResources().getDisplayMetrics().density);
+        float canvasWidth = context.getResources().getDisplayMetrics().widthPixels;
+        float canvasHeight = context.getResources().getDisplayMetrics().heightPixels;
+        float scale = Math.min(canvasWidth / 1280f, canvasHeight / 720f);
+        return (int) (dp * scale * context.getResources().getDisplayMetrics().density);
     }
     
     // Add abstract toJson method

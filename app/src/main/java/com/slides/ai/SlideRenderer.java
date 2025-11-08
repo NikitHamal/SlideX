@@ -18,6 +18,8 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import android.graphics.BlurMaskFilter;
+import android.graphics.Rect;
 
 /**
 * SlideRenderer handles all canvas drawing operations for the slide presentation
@@ -70,6 +72,13 @@ public class SlideRenderer {
 	}
 	
 	private ElementSelectionListener elementSelectionListener;
+
+	// Callback interface for element updates
+	public interface ElementUpdateListener {
+		void onElementUpdated();
+	}
+
+	private ElementUpdateListener elementUpdateListener;
 	
 	public SlideRenderer(Context context, View slideView, HashMap<String, Bitmap> imageCache) {
 		this.context = context;
@@ -93,6 +102,10 @@ public class SlideRenderer {
 	public void setElementSelectionListener(ElementSelectionListener listener) {
 		this.elementSelectionListener = listener;
 	}
+
+	public void setElementUpdateListener(ElementUpdateListener listener) {
+		this.elementUpdateListener = listener;
+	}
 	
 	public void setSlideData(JSONObject data) {
 		slideData = data;
@@ -101,6 +114,10 @@ public class SlideRenderer {
 		slideView.invalidate();
 	}
 	
+	public JSONObject getSlideData() {
+		return slideData;
+	}
+
 	public void setBackgroundColor(int color) {
 		backgroundColor = color;
 	}
@@ -111,6 +128,14 @@ public class SlideRenderer {
 		translateY = 0;
 		transformMatrix.reset();
 		slideView.invalidate();
+	}
+
+	public float getCanvasWidth() {
+		return slideView.getWidth();
+	}
+
+	public float getCanvasHeight() {
+		return slideView.getHeight();
 	}
 	
 	private void parseSlideData() {
@@ -202,13 +227,25 @@ public class SlideRenderer {
 			case MotionEvent.ACTION_MOVE:
 				// Handle element resizing
 				if (isResizing && selectedElement != null) {
-					float dx = (x - lastTouchX);
-					float dy = (y - lastTouchY);
-					
+					float dx = x - lastTouchX;
+					float dy = y - lastTouchY;
+
+					if (selectedElement.lockAspectRatio) {
+						float originalWidth = selectedElement.width;
+						float originalHeight = selectedElement.height;
+						float aspectRatio = originalWidth / originalHeight;
+
+						if (Math.abs(dx) > Math.abs(dy)) {
+							dy = dx / aspectRatio;
+						} else {
+							dx = dy * aspectRatio;
+						}
+					}
+
 					// Store original values for text scaling calculation
 					float originalWidth = selectedElement.width;
 					float originalHeight = selectedElement.height;
-					
+
 					switch (resizeHandleIndex) {
 						case 0: // Top-left
 							selectedElement.x += dx;
@@ -246,7 +283,8 @@ public class SlideRenderer {
 						float scaleRatio = (widthRatio + heightRatio) / 2.0f;
 						
 						// Scale the text size (corrected line)
-						textElement.fontSize = textElement.fontSize * scaleRatio;
+						if(scaleRatio > 0 && scaleRatio < 2)
+						    textElement.fontSize = textElement.fontSize * scaleRatio;
 						
 						// Recreate the text layout with new size
 						textElement.createTextLayout();
@@ -260,6 +298,9 @@ public class SlideRenderer {
 					lastTouchX = x;
 					lastTouchY = y;
 					slideView.invalidate();
+                    if (elementUpdateListener != null) {
+                        elementUpdateListener.onElementUpdated();
+                    }
 					return true;
 				}
 				
@@ -291,6 +332,9 @@ public class SlideRenderer {
 					lastTouchX = x;
 					lastTouchY = y;
 					slideView.invalidate();
+                    if (elementUpdateListener != null) {
+                        elementUpdateListener.onElementUpdated();
+                    }
 					return true;
 				}
 				break;
@@ -346,33 +390,33 @@ public class SlideRenderer {
 			float otherCenterY = other.y + other.height / 2;
 			
 			// Check horizontal alignment (left, center, right)
-			checkAndShowHorizontal(left, otherLeft, element, -1, 0);
-			checkAndShowHorizontal(centerX, otherCenterX, element, 0, 0);
-			checkAndShowHorizontal(right, otherRight, element, 1, 0);
-			
+			checkAndShowHorizontal(left, otherLeft);
+			checkAndShowHorizontal(centerX, otherCenterX);
+			checkAndShowHorizontal(right, otherRight);
+
 			// Also check left to right and right to left
-			checkAndShowHorizontal(left, otherRight, element, -1, 0);
-			checkAndShowHorizontal(right, otherLeft, element, 1, 0);
-			
+			checkAndShowHorizontal(left, otherRight);
+			checkAndShowHorizontal(right, otherLeft);
+
 			// Check vertical alignment (top, center, bottom)
-			checkAndShowVertical(top, otherTop, element, -1, 0);
-			checkAndShowVertical(centerY, otherCenterY, element, 0, 0);
-			checkAndShowVertical(bottom, otherBottom, element, 1, 0);
-			
+			checkAndShowVertical(top, otherTop);
+			checkAndShowVertical(centerY, otherCenterY);
+			checkAndShowVertical(bottom, otherBottom);
+
 			// Also check top to bottom and bottom to top
-			checkAndShowVertical(top, otherBottom, element, -1, 0);
-			checkAndShowVertical(bottom, otherTop, element, 1, 0);
+			checkAndShowVertical(top, otherBottom);
+			checkAndShowVertical(bottom, otherTop);
 		}
 	}
 	
-	private void checkAndShowHorizontal(float value1, float value2, SlideElement element, int edge, float offset) {
+	private void checkAndShowHorizontal(float value1, float value2) {
 		if (Math.abs(value1 - value2) < snapThreshold / scaleFactor) {
 			// Add guide for visualization
 			verticalGuides.add(value2);
 		}
 	}
-	
-	private void checkAndShowVertical(float value1, float value2, SlideElement element, int edge, float offset) {
+
+	private void checkAndShowVertical(float value1, float value2) {
 		if (Math.abs(value1 - value2) < snapThreshold / scaleFactor) {
 			// Add guide for visualization
 			horizontalGuides.add(value2);
@@ -404,78 +448,36 @@ public class SlideRenderer {
 			element.draw(canvas);
 		}
 		
-		// Draw selection border and resize handles for selected element
+		// Draw selection overlay for selected element
 		if (selectedElement != null) {
-			// Create selection rectangle
-			RectF selectionRect = new RectF(
-				selectedElement.x - dpToPx(2) / scaleFactor, 
-				selectedElement.y - dpToPx(2) / scaleFactor, 
-				selectedElement.x + selectedElement.width + dpToPx(2) / scaleFactor, 
-				selectedElement.y + selectedElement.height + dpToPx(2) / scaleFactor
+			RectF elementRect = new RectF(
+					selectedElement.x,
+					selectedElement.y,
+					selectedElement.x + selectedElement.width,
+					selectedElement.y + selectedElement.height
 			);
-			
-			// Draw selection border - improved style with dashed effect
+
 			Paint selectionPaint = new Paint();
 			selectionPaint.setStyle(Paint.Style.STROKE);
-			selectionPaint.setColor(Color.BLUE); // Changed to solid blue for better visibility
-			selectionPaint.setStrokeWidth(dpToPx(1.5f) / scaleFactor);
-			selectionPaint.setPathEffect(new DashPathEffect(new float[] {dpToPx(4) / scaleFactor, dpToPx(2) / scaleFactor}, 0));
-			
-			// Draw selection rectangle
+			selectionPaint.setColor(ContextCompat.getColor(context, R.color.md_theme_primary));
+			selectionPaint.setStrokeWidth(dpToPx(1) / scaleFactor);
+			selectionPaint.setAntiAlias(true);
+
+			RectF selectionRect = new RectF(
+					elementRect.left - dpToPx(2) / scaleFactor,
+					elementRect.top - dpToPx(2) / scaleFactor,
+					elementRect.right + dpToPx(2) / scaleFactor,
+					elementRect.bottom + dpToPx(2) / scaleFactor
+			);
+
 			canvas.drawRect(selectionRect, selectionPaint);
-			
-			// Draw solid border underneath
-			Paint solidBorderPaint = new Paint();
-			solidBorderPaint.setStyle(Paint.Style.STROKE);
-			solidBorderPaint.setColor(Color.WHITE);
-			solidBorderPaint.setStrokeWidth(dpToPx(1) / scaleFactor);
-			canvas.drawRect(selectionRect, solidBorderPaint);
-			
-			// Draw resize handles - smaller and more elegant
-			float handleRadius = dpToPx(HANDLE_SIZE) / (2 * scaleFactor);
-			float[] handles = {
-				selectedElement.x, selectedElement.y, // top-left
-				selectedElement.x + selectedElement.width, selectedElement.y, // top-right
-				selectedElement.x, selectedElement.y + selectedElement.height, // bottom-left
-				selectedElement.x + selectedElement.width, selectedElement.y + selectedElement.height // bottom-right
-			};
-			
-			// Handle fill paint
-			Paint handleFillPaint = new Paint();
-			handleFillPaint.setColor(Color.BLUE); // Changed to blue for better visibility
-			handleFillPaint.setStyle(Paint.Style.FILL);
-			
-			// Handle stroke paint
-			Paint handleStrokePaint = new Paint();
-			handleStrokePaint.setColor(Color.WHITE);
-			handleStrokePaint.setStyle(Paint.Style.STROKE);
-			handleStrokePaint.setStrokeWidth(dpToPx(1) / scaleFactor);
-			
-			for (int i = 0; i < handles.length; i += 2) {
-				// Draw white border around handle
-				canvas.drawCircle(handles[i], handles[i + 1], handleRadius + dpToPx(1) / scaleFactor, handleStrokePaint);
-				// Draw handle fill
-				canvas.drawCircle(handles[i], handles[i + 1], handleRadius, handleFillPaint);
-			}
+
+			drawModernResizeHandles(canvas, elementRect);
 		}
-		
-		// Draw alignment guides if any
+
+		// Draw modern alignment guides
 		if (showAlignmentGuides && (isMovingElement || isResizing) && (!horizontalGuides.isEmpty() || !verticalGuides.isEmpty())) {
-			Paint guidePaint = new Paint();
-			guidePaint.setColor(Color.BLUE); // Changed to blue for better visibility
-			guidePaint.setStrokeWidth(dpToPx(1) / scaleFactor);
-			guidePaint.setStyle(Paint.Style.STROKE);
-			guidePaint.setPathEffect(new DashPathEffect(new float[] {dpToPx(4) / scaleFactor, dpToPx(2) / scaleFactor}, 0));
-			
-			// Draw horizontal guides
-			for (Float y : horizontalGuides) {
-				canvas.drawLine(0, y, 10000, y, guidePaint);
-			}
-			
-			// Draw vertical guides
-			for (Float x : verticalGuides) {
-				canvas.drawLine(x, 0, x, 10000, guidePaint);
-			}
+			drawModernAlignmentGuides(canvas);
 		}
 		
 		canvas.restore();
@@ -572,5 +574,145 @@ public class SlideRenderer {
 				return true;
 			}
 		}
+	}
+
+	/**
+	 * Draw modern, Material Design-inspired resize handles
+	 */
+	private void drawModernResizeHandles(Canvas canvas, RectF elementRect) {
+		float handleRadius = dpToPx(6) / scaleFactor;
+		Paint handlePaint = new Paint();
+		handlePaint.setStyle(Paint.Style.FILL);
+		handlePaint.setColor(Color.WHITE);
+		handlePaint.setAntiAlias(true);
+
+		Paint handleBorderPaint = new Paint();
+		handleBorderPaint.setStyle(Paint.Style.STROKE);
+		handleBorderPaint.setColor(ContextCompat.getColor(context, R.color.md_theme_primary));
+		handleBorderPaint.setStrokeWidth(dpToPx(2) / scaleFactor);
+		handleBorderPaint.setAntiAlias(true);
+
+		float[] handlePositions = {
+				elementRect.left, elementRect.top,
+				elementRect.right, elementRect.top,
+				elementRect.left, elementRect.bottom,
+				elementRect.right, elementRect.bottom
+		};
+
+		for (int i = 0; i < handlePositions.length; i += 2) {
+			float x = handlePositions[i];
+			float y = handlePositions[i+1];
+			canvas.drawCircle(x, y, handleRadius, handlePaint);
+			canvas.drawCircle(x, y, handleRadius, handleBorderPaint);
+		}
+	}
+	
+	/**
+	 * Draw modern alignment guides with better visual design
+	 */
+	private void drawModernAlignmentGuides(Canvas canvas) {
+		Paint guidePaint = new Paint();
+		guidePaint.setColor(ContextCompat.getColor(context, R.color.md_theme_primary));
+		guidePaint.setStrokeWidth(dpToPx(1) / scaleFactor);
+		guidePaint.setStyle(Paint.Style.STROKE);
+		guidePaint.setAntiAlias(true);
+		guidePaint.setPathEffect(new DashPathEffect(new float[]{10, 10}, 0));
+
+		for (Float y : horizontalGuides) {
+			canvas.drawLine(0, y, canvas.getWidth(), y, guidePaint);
+		}
+
+		for (Float x : verticalGuides) {
+			canvas.drawLine(x, 0, x, canvas.getHeight(), guidePaint);
+		}
+	}
+	
+	/**
+	 * Draw intersection points where guides meet
+	 */
+	private void drawGuideIntersection(Canvas canvas, float x, float y) {
+		Paint intersectionPaint = new Paint();
+		intersectionPaint.setColor(Color.parseColor("#FF4081"));
+		intersectionPaint.setStyle(Paint.Style.FILL);
+		intersectionPaint.setAntiAlias(true);
+		
+		float dotRadius = dpToPx(3) / scaleFactor;
+		canvas.drawCircle(x, y, dotRadius, intersectionPaint);
+		
+		// Add white border for visibility
+		Paint borderPaint = new Paint();
+		borderPaint.setColor(Color.WHITE);
+		borderPaint.setStyle(Paint.Style.STROKE);
+		borderPaint.setStrokeWidth(dpToPx(1) / scaleFactor);
+		borderPaint.setAntiAlias(true);
+		canvas.drawCircle(x, y, dotRadius, borderPaint);
+	}
+	
+	/**
+	 * Draw helpful labels for alignment guides
+	 */
+	private void drawGuideLabels(Canvas canvas) {
+		if (selectedElement == null) return;
+		
+		Paint labelPaint = new Paint();
+		labelPaint.setColor(Color.parseColor("#FF4081"));
+		labelPaint.setTextSize(dpToPx(10) / scaleFactor);
+		labelPaint.setAntiAlias(true);
+		labelPaint.setTextAlign(Paint.Align.CENTER);
+		
+		Paint labelBgPaint = new Paint();
+		labelBgPaint.setColor(Color.parseColor("#E0FFFFFF"));
+		labelBgPaint.setStyle(Paint.Style.FILL);
+		labelBgPaint.setAntiAlias(true);
+		
+		// Show alignment type at element position
+		String alignmentText = getAlignmentDescription();
+		if (!alignmentText.isEmpty()) {
+			float textX = selectedElement.x + selectedElement.width / 2;
+			float textY = selectedElement.y - dpToPx(20) / scaleFactor;
+			
+			// Draw background
+			Rect textBounds = new Rect();
+			labelPaint.getTextBounds(alignmentText, 0, alignmentText.length(), textBounds);
+			RectF bgRect = new RectF(
+				textX - textBounds.width() / 2 - dpToPx(4) / scaleFactor,
+				textY - textBounds.height() - dpToPx(2) / scaleFactor,
+				textX + textBounds.width() / 2 + dpToPx(4) / scaleFactor,
+				textY + dpToPx(2) / scaleFactor
+			);
+			canvas.drawRoundRect(bgRect, dpToPx(2) / scaleFactor, dpToPx(2) / scaleFactor, labelBgPaint);
+			
+			// Draw text
+			canvas.drawText(alignmentText, textX, textY, labelPaint);
+		}
+	}
+	
+	/**
+	 * Get description of current alignment for user feedback
+	 */
+	private String getAlignmentDescription() {
+		if (horizontalGuides.isEmpty() && verticalGuides.isEmpty()) {
+			return "";
+		}
+
+		List<String> alignments = new ArrayList<>();
+		if (!horizontalGuides.isEmpty()) {
+			alignments.add("H-Aligned");
+		}
+		if (!verticalGuides.isEmpty()) {
+			alignments.add("V-Aligned");
+		}
+
+		return String.join(", ", alignments);
+	}
+
+	public void bringToFront(SlideElement element) {
+		elements.remove(element);
+		elements.add(element);
+	}
+
+	public void sendToBack(SlideElement element) {
+		elements.remove(element);
+		elements.add(0, element);
 	}
 }

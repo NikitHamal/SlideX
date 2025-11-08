@@ -250,6 +250,13 @@
                 android:valueTo="30"
                 android:stepSize="1"
                 android:layout_marginBottom="16dp" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_lock_aspect_ratio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lock Aspect Ratio"
+                android:checked="true"/>
         </LinearLayout>
 
         <!-- Shape Element Customization Section -->
@@ -369,6 +376,13 @@
                 android:valueTo="10"
                 android:stepSize="1"
                 android:layout_marginBottom="16dp" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_shape_lock_aspect_ratio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lock Aspect Ratio"
+                android:checked="true"/>
         </LinearLayout>
 
         <!-- Table Element Customization Section -->
@@ -551,6 +565,53 @@
                 android:text="Select Color"
                 style="@style/Widget.Material3.Button"
                 android:layout_marginBottom="16dp"/>
+        </LinearLayout>
+
+        <!-- Arrange Section -->
+        <LinearLayout
+            android:id="@+id/arrange_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Arrange"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slider_rotation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0"
+                android:valueTo="360"
+                android:stepSize="1"
+                android:layout_marginBottom="16dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_bring_to_front"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Bring to Front"
+                    style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_send_to_back"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Send to Back"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_marginStart="8dp"/>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
