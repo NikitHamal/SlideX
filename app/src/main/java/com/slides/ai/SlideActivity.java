@@ -305,13 +305,6 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
             }
         } else if (selectedModel.startsWith("qwen") || selectedModel.startsWith("qwq")) {
             if (qwenManager != null) {
-                // Check if we have a Qwen token first
-                String qwenToken = apiKeyManager.getQwenToken();
-                if (qwenToken == null || qwenToken.trim().isEmpty()) {
-                    handleErrorResponse("No Qwen API token available. Please add your token from chat.qwen.ai in Settings → API Keys.");
-                    return;
-                }
-
                 qwenManager.createNewChat(new QwenManager.QwenCallback<com.slides.ai.qwen.QwenNewChatResponse>() {
                     @Override
                     public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
@@ -324,7 +317,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
                                         handleSuccessfulResponse(jsonStr);
                                     } catch (Exception e) {
                                         Log.e("SlideActivity", "Error extracting JSON from Qwen response", e);
-                                        handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage());
+                                        handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage() + "\n\n" + jsonResponse);
                                     }
                                 }
 
@@ -405,15 +398,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
     private void handleErrorResponse(String errorMessage) {
         Log.e("SlideActivity", "Chat API error: " + errorMessage);
         if (chatFragment != null) {
-            String userFriendlyMessage;
-            if (errorMessage.contains("API key")) {
-                userFriendlyMessage = "Please add a valid API key in Settings to use the AI chat feature.";
-            } else if (errorMessage.contains("quota") || errorMessage.contains("limit")) {
-                userFriendlyMessage = "API quota exceeded. Please try again later or check your API key limits.";
-            } else {
-                userFriendlyMessage = "Sorry, I couldn't process your request right now. Please try again or create slides manually using the Code tab.";
-            }
-            chatFragment.addAiResponse(userFriendlyMessage);
+            chatFragment.addAiResponse("An error occurred: " + errorMessage);
         }
     }
 
