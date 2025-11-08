@@ -25,6 +25,7 @@ public class QwenManager {
     private String currentChatId;
     private String lastParentId;
     private List<QwenCompletionRequest.Message> conversationHistory = new ArrayList<>();
+    private String cookies;
 
     public interface QwenCallback<T> {
         void onSuccess(T response);
@@ -59,6 +60,9 @@ public class QwenManager {
                 connection.setRequestProperty("Source", "web");
                 connection.setRequestProperty("Authorization", "Bearer");
                 connection.setRequestProperty("bx-umidtoken", midtoken);
+                if (cookies != null) {
+                    connection.setRequestProperty("Cookie", cookies);
+                }
                 connection.setDoOutput(true);
 
                 List<String> models = new ArrayList<>();
@@ -81,6 +85,12 @@ public class QwenManager {
                         currentChatId = response.data.id;
                         lastParentId = null;
                         conversationHistory.clear();
+
+                        // Store cookies
+                        List<String> cookieList = connection.getHeaderFields().get("Set-Cookie");
+                        if (cookieList != null) {
+                            cookies = String.join(";", cookieList);
+                        }
                     }
 
                     mainHandler.post(() -> callback.onSuccess(response));
@@ -165,6 +175,9 @@ public class QwenManager {
                 connection.setRequestProperty("Source", "web");
                 connection.setRequestProperty("Authorization", "Bearer");
                 connection.setRequestProperty("bx-umidtoken", midtoken);
+                if (cookies != null) {
+                    connection.setRequestProperty("Cookie", cookies);
+                }
                 connection.setDoOutput(true);
 
                 QwenCompletionRequest request = new QwenCompletionRequest();
