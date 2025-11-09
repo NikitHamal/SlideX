@@ -18,6 +18,7 @@ public class RevealJsGenerator {
         String revealJs = readRawResource(R.raw.reveal);
         String revealCss = readRawResource(R.raw.reveal_css);
         String themeCss = readRawResource(R.raw.black_css);
+        String fontCss = readRawResource(R.raw.source_sans_pro);
 
         StringBuilder slidesHtml = new StringBuilder();
         for (String slideHtml : slideHtmlList) {
@@ -30,6 +31,9 @@ public class RevealJsGenerator {
                 "  <meta charset=\"utf-8\">\n" +
                 "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">\n" +
                 "  <title>reveal.js</title>\n" +
+                "  <style>\n" +
+                "    " + fontCss + "\n" +
+                "  </style>\n" +
                 "  <style>\n" +
                 "    " + revealCss + "\n" +
                 "  </style>\n" +

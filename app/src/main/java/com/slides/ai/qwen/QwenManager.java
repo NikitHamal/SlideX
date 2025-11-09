@@ -310,7 +310,8 @@ public class QwenManager {
                 "  <p>Slide content</p>\n" +
                 "</section>\n" +
                 "Guidelines:\n" +
-                "- Use standard HTML tags like `<h2>`, `<p>`, `<ul>`, `<li>`, `<img>`.\n" +
+                "- Use simple, semantic HTML tags like `<h2>`, `<p>`, `<ul>`, `<li>`, `<img>`.\n" +
+                "- Do NOT use `<div>` tags or inline `style` attributes.\n" +
                 "- For images, use real public URLs.\n" +
                 "- You can use reveal.js fragments to animate elements, for example: `<p class=\"fragment\">This will fade in</p>`.\n" +
                 "IMPORTANT: Return ONLY the HTML `<section>` element, nothing else.";

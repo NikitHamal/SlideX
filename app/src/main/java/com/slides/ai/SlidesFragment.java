@@ -1,10 +1,12 @@
 package com.slides.ai;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -47,7 +49,16 @@ public class SlidesFragment extends Fragment {
 
     private void initViews(View view) {
         slideWebView = view.findViewById(R.id.slide_webview);
-        slideWebView.getSettings().setJavaScriptEnabled(true);
+        WebSettings webSettings = slideWebView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setAllowFileAccess(true);
+        webSettings.setAllowContentAccess(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            slideWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        } else {
+            slideWebView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        }
 
         btnPreviousSlide = view.findViewById(R.id.btn_previous_slide);
         btnNextSlide = view.findViewById(R.id.btn_next_slide);
