@@ -233,8 +233,14 @@ public class SlideActivity extends AppCompatActivity implements
             if (networkManager != null) {
                 networkManager.sendPromptToGemini(prompt, 0, 0, new NetworkManager.ApiResponseCallback() {
                     @Override
-                    public void onSuccess(String jsonStr) {
-                        handleSuccessfulResponse(jsonStr);
+                    public void onSuccess(String htmlResponse) {
+                        try {
+                            String html = extractHtmlFromResponse(htmlResponse);
+                            handleSuccessfulResponse(html);
+                        } catch (Exception e) {
+                            Log.e("SlideActivity", "Error extracting HTML from Gemini response", e);
+                            handleErrorResponse("Error extracting HTML from Gemini response: " + e.getMessage() + "\n\n" + htmlResponse);
+                        }
                     }
 
                     @Override
@@ -253,13 +259,13 @@ public class SlideActivity extends AppCompatActivity implements
                         if (response != null && response.success && response.data != null) {
                             qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, 0, 0, new QwenManager.QwenCallback<String>() {
                                 @Override
-                                public void onSuccess(String jsonResponse) {
+                                public void onSuccess(String htmlResponse) {
                                     try {
-                                        String jsonStr = extractJsonFromResponse(jsonResponse);
-                                        handleSuccessfulResponse(jsonStr);
+                                        String html = extractHtmlFromResponse(htmlResponse);
+                                        handleSuccessfulResponse(html);
                                     } catch (Exception e) {
-                                        Log.e("SlideActivity", "Error extracting JSON from Qwen response", e);
-                                        handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage() + "\n\n" + jsonResponse);
+                                        Log.e("SlideActivity", "Error extracting HTML from Qwen response", e);
+                                        handleErrorResponse("Error extracting HTML from Qwen response: " + e.getMessage() + "\n\n" + htmlResponse);
                                     }
                                 }
 
@@ -324,71 +330,26 @@ public class SlideActivity extends AppCompatActivity implements
         }
     }
 
-    private String extractJsonFromResponse(String response) {
-        // First try to find JSON wrapped in markdown code blocks
-        if (response.contains("```json")) {
-            int startIdx = response.indexOf("```json") + 7;
+    private String extractHtmlFromResponse(String response) {
+        // First try to find HTML wrapped in markdown code blocks
+        if (response.contains("```html")) {
+            int startIdx = response.indexOf("```html") + 7;
             int endIdx = response.lastIndexOf("```");
             if (endIdx > startIdx) {
-                String jsonStr = response.substring(startIdx, endIdx).trim();
-                if (isValidJson(jsonStr)) {
-                    return jsonStr;
-                }
+                return response.substring(startIdx, endIdx).trim();
             }
         }
 
-        // Try to find JSON wrapped in any code blocks
-        if (response.contains("```")) {
-            int startIdx = response.indexOf("```");
-            int secondStart = response.indexOf('\n', startIdx);
-            if (secondStart > startIdx) {
-                int endIdx = response.lastIndexOf("```");
-                if (endIdx > secondStart) {
-                    String jsonStr = response.substring(secondStart + 1, endIdx).trim();
-                    if (isValidJson(jsonStr)) {
-                        return jsonStr;
-                    }
-                }
-            }
-        }
-
-        // Find the first complete JSON object
-        int startIdx = response.indexOf('{');
+        // Try to find a <section> tag
+        int startIdx = response.indexOf("<section");
         if (startIdx != -1) {
-            int braceCount = 0;
-            int endIdx = startIdx;
-            
-            for (int i = startIdx; i < response.length(); i++) {
-                char c = response.charAt(i);
-                if (c == '{') {
-                    braceCount++;
-                } else if (c == '}') {
-                    braceCount--;
-                    if (braceCount == 0) {
-                        endIdx = i;
-                        break;
-                    }
-                }
-            }
-            
-            if (braceCount == 0 && endIdx > startIdx) {
-                String jsonStr = response.substring(startIdx, endIdx + 1);
-                if (isValidJson(jsonStr)) {
-                    return jsonStr;
-                }
+            int endIdx = response.lastIndexOf("</section>");
+            if (endIdx != -1) {
+                return response.substring(startIdx, endIdx + 10).trim();
             }
         }
 
-        throw new IllegalArgumentException("No valid JSON found in response: " + response);
-    }
-
-    private boolean isValidJson(String jsonStr) {
-        try {
-            new org.json.JSONObject(jsonStr);
-            return true;
-        } catch (org.json.JSONException e) {
-            return false;
-        }
+        throw new IllegalArgumentException("No valid HTML found in response: " + response);
     }
 
 	private void saveSlideStackIfTemporary() {
