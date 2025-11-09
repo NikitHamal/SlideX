@@ -66,8 +66,8 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import com.slides.ai.qwen.QwenManager;
 
 public class SlideActivity extends AppCompatActivity implements
-CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener,
-SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
+        CodeFragment.CodeInteractionListener,
+        SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 
 	private ViewPager2 viewPager;
 	private TabLayout tabLayout;
@@ -79,19 +79,9 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 	private Handler mainHandler;
 	private ExecutorService executorService;
 
-	private String pendingExportFormat;
-	private int pendingExportQuality;
-	private float pendingExportScale;
-	private boolean pendingExportTransparent;
-
 	private NetworkManager networkManager;
 	private QwenManager qwenManager;
 	private ApiKeyManager apiKeyManager;
-
-	private static final int SLIDE_WIDTH = 320;
-	private static final int SLIDE_HEIGHT = 200;
-	private static final int PICK_IMAGE_REQUEST = 1;
-	private static final int WRITE_EXTERNAL_STORAGE_PERMISSION = 2;
 	
 	// Stack information for saving
 	private String stackId;
@@ -121,9 +111,6 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 		apiKeyManager = new ApiKeyManager(this);
 		networkManager = new NetworkManager(apiKeyManager, imageCache, mainHandler, executorService);
 		qwenManager = new QwenManager(apiKeyManager, mainHandler, executorService);
-
-		// Initialize slide renderer once we have the slides fragment
-		setupSlideRenderer();
 	}
 
 	private void initViews() {
@@ -194,10 +181,6 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 		if (chatFragment != null) {
 			chatFragment.setChatInteractionListener(this);
 		}
-	}
-
-	private void setupSlideRenderer() {
-		// Not used with WebView
 	}
 
 	@Override
@@ -479,16 +462,6 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 		Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
 	}
 
-	@Override
-	public void onElementSelected(SlideElement element) {
-		// Not used with WebView
-	}
-
-	@Override
-	public void onImageSelectionRequested(SlideElement element) {
-		// Not used with WebView
-	}
-
 	public HashMap<String, Bitmap> getImageCache() {
 		return imageCache;
 	}
@@ -502,7 +475,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 	@Override
 	public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 		if (item.getItemId() == R.id.action_download) {
-			showDownloadOptionsDialog();
+            Toast.makeText(this, "Exporting is not supported in this version.", Toast.LENGTH_SHORT).show();
 			return true;
 		}
         if (item.getItemId() == R.id.action_more) {
@@ -511,325 +484,5 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
             return true;
         }
 		return super.onOptionsItemSelected(item);
-	}
-
-	private void showDownloadOptionsDialog() {
-		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this,
-		R.style.ThemeOverlay_Material3_MaterialAlertDialog_Centered);
-
-		View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_download_options, null);
-
-		// Initialize all views first
-		AutoCompleteTextView formatSpinner = dialogView.findViewById(R.id.format_spinner);
-		AutoCompleteTextView qualitySpinner = dialogView.findViewById(R.id.quality_spinner);
-		AutoCompleteTextView sizeSpinner = dialogView.findViewById(R.id.size_spinner);
-		SwitchMaterial transparentSwitch = dialogView.findViewById(R.id.transparent_switch);
-
-		// Setup format spinner
-		String[] formats = new String[]{"PNG", "JPG", "PDF"};
-		ArrayAdapter<String> formatAdapter = new ArrayAdapter<>(
-		this, android.R.layout.simple_dropdown_item_1line, formats);
-		formatSpinner.setAdapter(formatAdapter);
-		formatSpinner.setText(formats[0], false); // Default to PNG
-
-		// Setup quality spinner (only for PNG/JPG)
-		String[] qualities = new String[]{"High (100%)", "Medium (80%)", "Low (50%)"};
-		ArrayAdapter<String> qualityAdapter = new ArrayAdapter<>(
-		this, android.R.layout.simple_dropdown_item_1line, qualities);
-		qualitySpinner.setAdapter(qualityAdapter);
-		qualitySpinner.setText(qualities[0], false); // Default to High
-
-		// Setup size spinner
-		String[] sizes = new String[]{"Original", "2x", "4x"};
-		ArrayAdapter<String> sizeAdapter = new ArrayAdapter<>(
-		this, android.R.layout.simple_dropdown_item_1line, sizes);
-		sizeSpinner.setAdapter(sizeAdapter);
-		sizeSpinner.setText(sizes[0], false); // Default to Original
-
-		// Show transparent switch by default if PNG is selected
-		transparentSwitch.setVisibility(formatSpinner.getText().toString().equals("PNG") ? View.VISIBLE : View.GONE);
-
-		// Handle format changes
-		formatSpinner.setOnItemClickListener((parent, view, position, id) -> {
-			String selectedFormat = formats[position];
-			transparentSwitch.setVisibility(selectedFormat.equals("PNG") ? View.VISIBLE : View.GONE);
-			qualitySpinner.setEnabled(!selectedFormat.equals("PDF"));
-		});
-
-		builder.setTitle("Export Slide")
-		.setView(dialogView)
-		.setPositiveButton("Export", (dialog, which) -> {
-			String format = formatSpinner.getText().toString();
-
-			if (format.equals("PDF")) {
-				pendingExportFormat = format;
-				checkStoragePermissionAndExport();
-			} else {
-				// Parse quality and size
-				String quality = qualitySpinner.getText().toString();
-				String size = sizeSpinner.getText().toString();
-				boolean transparent = transparentSwitch.isChecked() && format.equals("PNG");
-
-				int qualityValue = 100;
-				if (quality.contains("80")) {
-					qualityValue = 80;
-				} else if (quality.contains("50")) {
-					qualityValue = 50;
-				}
-
-				float scale = 1.0f;
-				if (size.equals("2x")) {
-					scale = 2.0f;
-				} else if (size.equals("4x")) {
-					scale = 4.0f;
-				}
-
-				// Store the parameters for permission callback
-				pendingExportFormat = format;
-				pendingExportQuality = qualityValue;
-				pendingExportScale = scale;
-				pendingExportTransparent = transparent;
-
-				// Check for storage permission and export
-				checkStoragePermissionAndExport();
-			}
-		})
-		.setNegativeButton("Cancel", null);
-
-		AlertDialog dialog = builder.create();
-		dialog.show();
-
-		// Ensure the dialog is properly sized
-		if (dialog.getWindow() != null) {
-			dialog.getWindow().setLayout(
-				ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.WRAP_CONTENT
-			);
-		}
-	}
-
-	private void checkStoragePermissionAndExport() {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-			// Android 10+ - no need for WRITE_EXTERNAL_STORAGE permission
-			performExport();
-		} else {
-			// Android 9 and below - need WRITE_EXTERNAL_STORAGE permission
-			if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) 
-				!= PackageManager.PERMISSION_GRANTED) {
-				ActivityCompat.requestPermissions(this, 
-					new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 
-					WRITE_EXTERNAL_STORAGE_PERMISSION);
-			} else {
-				performExport();
-			}
-		}
-	}
-
-	@Override
-	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-		if (requestCode == WRITE_EXTERNAL_STORAGE_PERMISSION) {
-			if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-				performExport();
-			} else {
-				Toast.makeText(this, "Storage permission required to save image", Toast.LENGTH_SHORT).show();
-			}
-		}
-	}
-
-	private void performExport() {
-		if (pendingExportFormat == null) {
-			Toast.makeText(this, "Export format not set", Toast.LENGTH_SHORT).show();
-			return;
-		}
-
-		if (pendingExportFormat.equals("PDF")) {
-			exportToPdf();
-		} else {
-			exportToImage();
-		}
-	}
-
-	private void exportToImage() {
-		executorService.execute(() -> {
-			try {
-				ensureFragmentReferences();
-				if (slidesFragment == null || slidesFragment.getSlideRenderer() == null) {
-					mainHandler.post(() -> Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show());
-					return;
-				}
-
-				// Create bitmap from slide
-				int width = (int)(SLIDE_WIDTH * pendingExportScale);
-				int height = (int)(SLIDE_HEIGHT * pendingExportScale);
-				
-				Bitmap bitmap = Bitmap.createBitmap(width, height, 
-					pendingExportTransparent ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
-				Canvas canvas = new Canvas(bitmap);
-
-				// Clear background
-				if (!pendingExportTransparent) {
-					canvas.drawColor(Color.WHITE);
-				}
-
-				// Scale canvas for higher resolution
-				canvas.scale(pendingExportScale, pendingExportScale);
-
-				// Draw slide content
-				slidesFragment.getSlideRenderer().draw(canvas);
-
-				// Save to storage
-				String fileName = "slide_" + System.currentTimeMillis() + 
-					(pendingExportFormat.equals("PNG") ? ".png" : ".jpg");
-				
-				boolean saved = saveBitmapToStorage(bitmap, fileName, pendingExportFormat, pendingExportQuality);
-
-				mainHandler.post(() -> {
-					if (saved) {
-						Toast.makeText(this, "Slide exported as " + fileName, Toast.LENGTH_LONG).show();
-					} else {
-						Toast.makeText(this, "Failed to export slide", Toast.LENGTH_SHORT).show();
-					}
-				});
-
-			} catch (Exception e) {
-				Log.e("SlideActivity", "Export error: " + e.getMessage());
-				mainHandler.post(() -> Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-			}
-		});
-	}
-
-	private boolean saveBitmapToStorage(Bitmap bitmap, String fileName, String format, int quality) {
-		try {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-				// Use MediaStore for Android 10+
-				ContentResolver resolver = getContentResolver();
-				ContentValues contentValues = new ContentValues();
-				contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
-				contentValues.put(MediaStore.MediaColumns.MIME_TYPE, 
-					format.equals("PNG") ? "image/png" : "image/jpeg");
-				contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/AI Slides");
-
-				Uri imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
-				if (imageUri != null) {
-					OutputStream outputStream = resolver.openOutputStream(imageUri);
-					if (outputStream != null) {
-						Bitmap.CompressFormat compressFormat = format.equals("PNG") ? 
-							Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
-						bitmap.compress(compressFormat, quality, outputStream);
-						outputStream.close();
-						return true;
-					}
-				}
-			} else {
-				// Use external storage for Android 9 and below
-				File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-				File aiSlidesDir = new File(picturesDir, "AI Slides");
-				if (!aiSlidesDir.exists()) {
-					aiSlidesDir.mkdirs();
-				}
-
-				File imageFile = new File(aiSlidesDir, fileName);
-				FileOutputStream outputStream = new FileOutputStream(imageFile);
-				
-				Bitmap.CompressFormat compressFormat = format.equals("PNG") ? 
-					Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
-				bitmap.compress(compressFormat, quality, outputStream);
-				outputStream.close();
-
-				// Notify media scanner
-				MediaScannerConnection.scanFile(this, new String[]{imageFile.getAbsolutePath()}, null, null);
-				return true;
-			}
-		} catch (Exception e) {
-			Log.e("SlideActivity", "Save error: " + e.getMessage());
-		}
-		return false;
-	}
-
-	private void exportToPdf() {
-		executorService.execute(() -> {
-			try {
-				ensureFragmentReferences();
-				if (slidesFragment == null || slidesFragment.getSlideRenderer() == null) {
-					mainHandler.post(() -> Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show());
-					return;
-				}
-
-				// Create PDF document
-				PdfDocument pdfDocument = new PdfDocument();
-				PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(
-					SLIDE_WIDTH * 2, SLIDE_HEIGHT * 2, 1).create(); // 2x scale for better quality
-				PdfDocument.Page page = pdfDocument.startPage(pageInfo);
-
-				Canvas canvas = page.getCanvas();
-				canvas.scale(2.0f, 2.0f); // Scale up for better quality
-
-				// Draw slide content
-				slidesFragment.getSlideRenderer().draw(canvas);
-
-				pdfDocument.finishPage(page);
-
-				// Save PDF
-				String fileName = "slide_" + System.currentTimeMillis() + ".pdf";
-				boolean saved = savePdfToStorage(pdfDocument, fileName);
-
-				pdfDocument.close();
-
-				mainHandler.post(() -> {
-					if (saved) {
-						Toast.makeText(this, "Slide exported as " + fileName, Toast.LENGTH_LONG).show();
-					} else {
-						Toast.makeText(this, "Failed to export PDF", Toast.LENGTH_SHORT).show();
-					}
-				});
-
-			} catch (Exception e) {
-				Log.e("SlideActivity", "PDF export error: " + e.getMessage());
-				mainHandler.post(() -> Toast.makeText(this, "PDF export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-			}
-		});
-	}
-
-	private boolean savePdfToStorage(PdfDocument pdfDocument, String fileName) {
-		try {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-				// Use MediaStore for Android 10+
-				ContentResolver resolver = getContentResolver();
-				ContentValues contentValues = new ContentValues();
-				contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
-				contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf");
-				contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/AI Slides");
-
-				Uri pdfUri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues);
-				if (pdfUri != null) {
-					OutputStream outputStream = resolver.openOutputStream(pdfUri);
-					if (outputStream != null) {
-						pdfDocument.writeTo(outputStream);
-						outputStream.close();
-						return true;
-					}
-				}
-			} else {
-				// Use external storage for Android 9 and below
-				File documentsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
-				File aiSlidesDir = new File(documentsDir, "AI Slides");
-				if (!aiSlidesDir.exists()) {
-					aiSlidesDir.mkdirs();
-				}
-
-				File pdfFile = new File(aiSlidesDir, fileName);
-				FileOutputStream outputStream = new FileOutputStream(pdfFile);
-				pdfDocument.writeTo(outputStream);
-				outputStream.close();
-
-				// Notify media scanner
-				MediaScannerConnection.scanFile(this, new String[]{pdfFile.getAbsolutePath()}, null, null);
-				return true;
-			}
-		} catch (Exception e) {
-			Log.e("SlideActivity", "PDF save error: " + e.getMessage());
-		}
-		return false;
 	}
 }
