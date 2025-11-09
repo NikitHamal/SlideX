@@ -92,6 +92,12 @@ public class SlideActivity extends AppCompatActivity implements
 	private CodeFragment codeFragment;
 	private ChatFragment chatFragment;
 
+	// Export parameters
+    private String pendingExportFormat;
+    private int pendingExportQuality;
+    private float pendingExportScale;
+    private boolean pendingExportTransparent;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
