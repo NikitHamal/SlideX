@@ -65,9 +65,9 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.slides.ai.qwen.QwenManager;
 
-public class SlideActivity extends AppCompatActivity implements SlideRenderer.ElementSelectionListener,
+public class SlideActivity extends AppCompatActivity implements
 CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener,
-SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, SlideRenderer.ElementUpdateListener {
+SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 
 	private ViewPager2 viewPager;
 	private TabLayout tabLayout;
@@ -84,17 +84,14 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	private float pendingExportScale;
 	private boolean pendingExportTransparent;
 
-	private SlideRenderer slideRenderer;
 	private NetworkManager networkManager;
 	private QwenManager qwenManager;
-	private CustomizationManager customizationManager;
 	private ApiKeyManager apiKeyManager;
 
 	private static final int SLIDE_WIDTH = 320;
 	private static final int SLIDE_HEIGHT = 200;
 	private static final int PICK_IMAGE_REQUEST = 1;
 	private static final int WRITE_EXTERNAL_STORAGE_PERMISSION = 2;
-	private SlideElement selectedElement;
 	
 	// Stack information for saving
 	private String stackId;
@@ -200,64 +197,26 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	}
 
 	private void setupSlideRenderer() {
-		// Wait for the slides fragment to be created
-		new Handler().postDelayed(() -> {
-			ensureFragmentReferences();
-			if (slidesFragment != null) {
-				slidesFragment.getSlideRenderer().setElementUpdateListener(this);
-				customizationManager = new CustomizationManager(this, slidesFragment.getSlideRenderer());
-				customizationManager.setImageSelectionCallback(this);
-			}
-		}, 500); // Increased delay to ensure fragments are ready
+		// Not used with WebView
 	}
 
 	@Override
-	public void onElementUpdated() {
-        ensureFragmentReferences();
-        if (slidesFragment != null && codeFragment != null) {
-            JSONObject slideData = slidesFragment.getSlideRenderer().getSlideData();
-            if (slideData != null) {
-                codeFragment.setCode(slideData.toString());
-            }
-        }
-	}
-
-	@Override
-	public void onCodeSaved(String jsonCode, int slideIndex) {
-		try {
-			JSONObject slideData = new JSONObject(jsonCode);
-			
-			// Update the slides fragment with new data
-			ensureFragmentReferences(); // Make sure we have fragment references
-			if (slidesFragment != null && codeFragment != null) {
-				// Get all slides from code fragment and update slides fragment
-				List<String> allSlides = codeFragment.getAllSlides();
-				List<JSONObject> slideObjects = new ArrayList<>();
-				for (String slide : allSlides) {
-					try {
-						slideObjects.add(new JSONObject(slide));
-					} catch (JSONException e) {
-						Log.e("SlideActivity", "Invalid JSON for slide: " + e.getMessage());
-						// Skip invalid slides but continue processing
-					}
-				}
-				if (!slideObjects.isEmpty()) {
-					slidesFragment.setSlides(slideObjects);
-					slidesFragment.navigateToSlide(slideIndex);
-				}
-			}
-			
-			// Save the slide stack if it's temporary
-			saveSlideStackIfTemporary();
-			
-			// Switch to slides tab to show the rendered slide
-			viewPager.setCurrentItem(0);
-			
-			Toast.makeText(this, "Slide " + (slideIndex + 1) + " updated successfully", Toast.LENGTH_SHORT).show();
-		} catch (JSONException e) {
-			Log.e("SlideActivity", "JSON parsing error: " + e.getMessage());
-			Toast.makeText(this, "Invalid JSON format: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+	public void onCodeSaved(String html, int slideIndex) {
+		ensureFragmentReferences();
+		if (slidesFragment != null && codeFragment != null) {
+			List<String> allSlides = codeFragment.getAllSlides();
+			RevealJsGenerator generator = new RevealJsGenerator(this);
+			String fullHtml = generator.generateHtml(allSlides);
+			slidesFragment.setSlideHtml(fullHtml);
 		}
+
+		// Save the slide stack if it's temporary
+		saveSlideStackIfTemporary();
+
+		// Switch to slides tab to show the rendered slide
+		viewPager.setCurrentItem(0);
+
+		Toast.makeText(this, "Slide " + (slideIndex + 1) + " updated successfully", Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
@@ -289,7 +248,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 
 		if (selectedModel.startsWith("gemini")) {
             if (networkManager != null) {
-                networkManager.sendPromptToGemini(prompt, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new NetworkManager.ApiResponseCallback() {
+                networkManager.sendPromptToGemini(prompt, 0, 0, new NetworkManager.ApiResponseCallback() {
                     @Override
                     public void onSuccess(String jsonStr) {
                         handleSuccessfulResponse(jsonStr);
@@ -309,7 +268,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
                     @Override
                     public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
                         if (response != null && response.success && response.data != null) {
-                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new QwenManager.QwenCallback<String>() {
+                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, 0, 0, new QwenManager.QwenCallback<String>() {
                                 @Override
                                 public void onSuccess(String jsonResponse) {
                                     try {
@@ -346,52 +305,32 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
         }
 	}
 
-    private void handleSuccessfulResponse(String jsonStr) {
-        try {
-            // Parse the JSON and add it as a new slide
-            JSONObject slideData = new JSONObject(jsonStr);
-
-            // Add to code fragment
-            ensureFragmentReferences();
-            if (codeFragment != null) {
-                if (codeFragment.isCurrentSlideDefault()) {
-                    codeFragment.setCode(jsonStr);
-                    onCodeSaved(jsonStr, 0);
-                } else {
-                    codeFragment.addSlideFromJson(jsonStr);
-                }
-
-                // Update slides fragment
-                if (slidesFragment != null) {
-                    List<String> allSlides = codeFragment.getAllSlides();
-                    List<JSONObject> slideObjects = new ArrayList<>();
-                    for (String slide : allSlides) {
-                        try {
-                            slideObjects.add(new JSONObject(slide));
-                        } catch (JSONException e) {
-                            Log.e("SlideActivity", "Invalid JSON for slide: " + e.getMessage());
-                        }
-                    }
-                    if (!slideObjects.isEmpty()) {
-                        slidesFragment.setSlides(slideObjects);
-                        slidesFragment.navigateToSlide(slideObjects.size() - 1); // Navigate to new slide
-                    }
-                }
+    private void handleSuccessfulResponse(String html) {
+        ensureFragmentReferences();
+        if (codeFragment != null) {
+            if (codeFragment.isCurrentSlideDefault()) {
+                codeFragment.setCode(html);
+                onCodeSaved(html, 0);
+            } else {
+                codeFragment.addSlideFromHtml(html);
             }
 
-            // Switch to slides tab to show the result
-            viewPager.setCurrentItem(0);
-
-            // Add AI response to chat
-            if (chatFragment != null) {
-                chatFragment.addAiResponse("Great! I've created a slide based on your request. You can view it in the Slides tab and edit the JSON code in the Code tab if needed.");
+            // Update slides fragment
+            if (slidesFragment != null) {
+                List<String> allSlides = codeFragment.getAllSlides();
+                RevealJsGenerator generator = new RevealJsGenerator(this);
+                String fullHtml = generator.generateHtml(allSlides);
+                slidesFragment.setSlideHtml(fullHtml);
+                slidesFragment.navigateToSlide(allSlides.size() - 1); // Navigate to new slide
             }
+        }
 
-        } catch (JSONException e) {
-            Log.e("SlideActivity", "Error parsing generated JSON: " + e.getMessage());
-            if (chatFragment != null) {
-                chatFragment.addAiResponse("I generated a slide, but there was an error parsing the JSON. Please check the Code tab and fix any formatting issues.");
-            }
+        // Switch to slides tab to show the result
+        viewPager.setCurrentItem(0);
+
+        // Add AI response to chat
+        if (chatFragment != null) {
+            chatFragment.addAiResponse("Great! I've created a slide based on your request. You can view it in the Slides tab and edit the HTML code in the Code tab if needed.");
         }
     }
 
@@ -542,20 +481,12 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 
 	@Override
 	public void onElementSelected(SlideElement element) {
-		selectedElement = element;
-		if (customizationManager != null) {
-			customizationManager.showElementCustomizationDialog(element);
-		}
+		// Not used with WebView
 	}
 
 	@Override
 	public void onImageSelectionRequested(SlideElement element) {
-		selectedElement = element;
-
-		Intent intent = new Intent();
-		intent.setType("image/*");
-		intent.setAction(Intent.ACTION_GET_CONTENT);
-		startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
+		// Not used with WebView
 	}
 
 	public HashMap<String, Bitmap> getImageCache() {

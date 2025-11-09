@@ -19,6 +19,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.provider.MediaStore;
 import java.io.IOException;
+import android.webkit.WebView;
 
 
 import androidx.annotation.NonNull;
@@ -39,10 +40,7 @@ import java.util.List;
 
 public class SlidesFragment extends Fragment implements SlideRenderer.ElementSelectionListener, CustomizationManager.ImageSelectionCallback {
 
-    private MaterialCardView slide;
-    private CustomView slideView;
-    private SlideRenderer slideRenderer;
-    private HashMap<String, Bitmap> imageCache = new HashMap<>();
+    private WebView slideWebView;
     
     private MaterialButton btnPreviousSlide;
     private MaterialButton btnNextSlide;
@@ -104,7 +102,7 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
     }
 
     private void initViews(View view) {
-        slide = view.findViewById(R.id.slide);
+        slideWebView = view.findViewById(R.id.slide_webview);
         btnPreviousSlide = view.findViewById(R.id.btn_previous_slide);
         btnNextSlide = view.findViewById(R.id.btn_next_slide);
         btnAddSlide = view.findViewById(R.id.btn_add_slide);
@@ -135,11 +133,18 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
         sliderOpacity = view.findViewById(R.id.slider_opacity);
         sliderStrokeWidth = view.findViewById(R.id.slider_stroke_width);
 
-        slideView = new CustomView(getContext());
-        slide.addView(slideView);
+        slideWebView.getSettings().setJavaScriptEnabled(true);
 
-        btnPreviousSlide.setOnClickListener(v -> navigateToPreviousSlide());
-        btnNextSlide.setOnClickListener(v -> navigateToNextSlide());
+        btnPreviousSlide.setOnClickListener(v -> {
+            if (slideWebView != null) {
+                slideWebView.evaluateJavascript("Reveal.prev();", null);
+            }
+        });
+        btnNextSlide.setOnClickListener(v -> {
+            if (slideWebView != null) {
+                slideWebView.evaluateJavascript("Reveal.next();", null);
+            }
+        });
         btnAddSlide.setOnClickListener(v -> {
             if (navigationListener != null) {
                 navigationListener.onAddSlideRequested();
@@ -148,12 +153,7 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
     }
 
     private void setupSlideRenderer() {
-        slideRenderer = new SlideRenderer(getContext(), slideView, imageCache);
-        slideRenderer.setElementSelectionListener(this);
-        
-        // Initialize customization manager
-        customizationManager = new CustomizationManager(getContext(), slideRenderer);
-        customizationManager.setImageSelectionCallback(this);
+        // No setup needed for WebView
     }
 
     private void setupCustomizationToolbar() {
@@ -315,107 +315,32 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
 
     @Override
     public void onElementSelected(SlideElement element) {
-        selectedElement = element;
-        showCustomizationToolbar(element);
+        // Not used with WebView
     }
 
     private void showCustomizationToolbar(SlideElement element) {
-        if (element == null) {
-            hideCustomizationToolbar();
-            return;
-        }
-
-        // Hide all option groups first
-        textOptions.setVisibility(View.GONE);
-        imageOptions.setVisibility(View.GONE);
-        shapeOptions.setVisibility(View.GONE);
-
-        // Update toolbar title and show appropriate options
-        if (element instanceof TextElement) {
-            toolbarTitle.setText("Text Options");
-            textOptions.setVisibility(View.VISIBLE);
-            setupTextElementUI((TextElement) element);
-        } else if (element instanceof ImageElement) {
-            toolbarTitle.setText("Image Options");
-            imageOptions.setVisibility(View.VISIBLE);
-            setupImageElementUI((ImageElement) element);
-        } else if (element instanceof ShapeElement) {
-            toolbarTitle.setText("Shape Options");
-            shapeOptions.setVisibility(View.VISIBLE);
-            setupShapeElementUI((ShapeElement) element);
-        } else {
-            toolbarTitle.setText("Element Options");
-        }
-
-        customizationToolbar.setVisibility(View.VISIBLE);
+        // Not used with WebView
     }
 
     private void setupTextElementUI(TextElement element) {
-        // Set font size
-        editFontSize.setText(String.valueOf((int) element.fontSize));
-
-        // Set text color
-        btnTextColor.setBackgroundTintList(ColorStateList.valueOf(element.color));
-
-        // Set font weight
-        if (element.bold) {
-            fontWeightChips.check(R.id.chip_bold);
-        } else {
-            fontWeightChips.check(R.id.chip_regular);
-        }
-
-        // Set text alignment
-        switch (element.alignment.toLowerCase()) {
-            case "center":
-                textAlignmentChips.check(R.id.chip_align_center);
-                break;
-            case "right":
-                textAlignmentChips.check(R.id.chip_align_right);
-                break;
-            default:
-                textAlignmentChips.check(R.id.chip_align_left);
-                break;
-        }
+        // Not used with WebView
     }
 
     private void setupImageElementUI(ImageElement element) {
-        // Set corner radius - ensure value is compatible with stepSize
-        float cornerRadiusValue = element.cornerRadius / dpToPx(1);
-        // Round to nearest integer to match stepSize of 1
-        sliderCornerRadius.setValue(Math.round(cornerRadiusValue));
+        // Not used with WebView
     }
 
     private void setupShapeElementUI(ShapeElement element) {
-        // Set fill color
-        btnShapeFillColor.setBackgroundTintList(ColorStateList.valueOf(element.color));
-        
-        // Set stroke color
-        btnShapeStrokeColor.setBackgroundTintList(ColorStateList.valueOf(element.strokeColor));
-        
-        // Set corner radius - ensure value is compatible with stepSize
-        float cornerRadiusValue = element.cornerRadius / dpToPx(1);
-        sliderCornerRadius.setValue(Math.round(cornerRadiusValue));
-        
-        // Set stroke width - ensure value is compatible with stepSize  
-        float strokeWidthValue = element.strokeWidth / dpToPx(1);
-        sliderStrokeWidth.setValue(Math.round(strokeWidthValue));
-        
-        // Set opacity - ensure value is compatible with stepSize (0-100)
-        sliderOpacity.setValue(Math.round(element.opacity * 100));
+        // Not used with WebView
     }
 
     private void hideCustomizationToolbar() {
         customizationToolbar.setVisibility(View.GONE);
-        selectedElement = null;
-        if (slideRenderer != null) {
-            slideRenderer.setSelectedElement(null);
-        }
     }
 
-    public void setSlideData(JSONObject json) {
-        if (slideRenderer != null) {
-            slideRenderer.setSlideData(json);
-            slideView.invalidate();
+    public void setSlideHtml(String html) {
+        if (slideWebView != null) {
+            slideWebView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
         }
     }
 
@@ -459,7 +384,7 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
 
     private void loadCurrentSlide() {
         if (currentSlideIndex < slides.size()) {
-            setSlideData(slides.get(currentSlideIndex));
+            // Not used with WebView
         }
     }
 
@@ -476,7 +401,7 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
     }
 
     public SlideRenderer getSlideRenderer() {
-        return slideRenderer;
+        return null;
     }
 
     public int getCurrentSlideIndex() {
@@ -491,31 +416,8 @@ public class SlidesFragment extends Fragment implements SlideRenderer.ElementSel
         return (int) (dp * getResources().getDisplayMetrics().density);
     }
 
-    private class CustomView extends View {
-        public CustomView(Context context) {
-            super(context);
-            setClickable(true);
-            setFocusable(true);
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            if (slideRenderer != null) {
-                slideRenderer.draw(canvas);
-            }
-        }
-
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
-            return slideRenderer != null && slideRenderer.handleTouchEvent(event);
-        }
-    }
-
     @Override
     public void onImageSelectionRequested(SlideElement element) {
-        // Handle image selection - for now, we'll show a placeholder
-        // You can implement image picker here in the future
-        Toast.makeText(getContext(), "Image selection feature coming soon", Toast.LENGTH_SHORT).show();
+        // Not used with WebView
     }
 }
