@@ -61,36 +61,17 @@ public class NetworkManager {
 				String result;
 				try {
 					// Construct the structured prompt with improved guidance for layout
-					String structuredPrompt = "Create a professional presentation slide based on this prompt: \"" + prompt + "\". " +
-					"The canvas size is " + canvasWidth + "x" + canvasHeight + " pixels. Please generate the slide elements accordingly." +
-					"You must respond with ONLY a valid JSON object (no markdown, no explanation) that contains:\n" +
-					"{\n" +
-					"  \"backgroundColor\": \"#FFFFFF\",\n" +
-					"  \"elements\": [\n" +
-					"    {\n" +
-					"      \"type\": \"text\",\n" +
-					"      \"content\": \"Slide Title\",\n" +
-					"      \"x\": 20,\n" +
-					"      \"y\": 20,\n" +
-					"      \"width\": 280,\n" +
-					"      \"height\": 40,\n" +
-					"      \"fontSize\": 24,\n" +
-					"      \"color\": \"#000000\",\n" +
-					"      \"bold\": true,\n" +
-					"      \"alignment\": \"center\"\n" +
-					"    }\n" +
-					"  ]\n" +
-					"}\n" +
-					"Guidelines:\n" +
-					"- Use slide dimensions " + canvasWidth + "x" + canvasHeight + "dp\n" +
-					"- Position elements with proper spacing\n" +
-					"- Include title, content, and optionally images/shapes\n" +
-					"- Use readable fonts (fontSize 12-24)\n" +
-					"- Choose professional colors\n" +
-					"- For images, use real public URLs\n" +
-					"- For shapes: type can be 'rectangle', 'oval', 'line'\n" +
-					"- Ensure no element overlap\n" +
-					"IMPORTANT: Return ONLY the JSON object, nothing else.";
+					String structuredPrompt = "Create a professional presentation slide based on this request: \"" + prompt + "\". " +
+							"You must respond with ONLY a valid HTML `<section>` element for a reveal.js presentation (no markdown, no explanation). Example:\n" +
+							"<section>\n" +
+							"  <h2>Slide Title</h2>\n" +
+							"  <p>Slide content</p>\n" +
+							"</section>\n" +
+							"Guidelines:\n" +
+							"- Use standard HTML tags like `<h2>`, `<p>`, `<ul>`, `<li>`, `<img>`.\n" +
+							"- For images, use real public URLs.\n" +
+							"- You can use reveal.js fragments to animate elements, for example: `<p class=\"fragment\">This will fade in</p>`.\n" +
+							"IMPORTANT: Return ONLY the HTML `<section>` element, nothing else.";
 					
 					// Create JSON request body
 					JSONObject requestBody = new JSONObject();
