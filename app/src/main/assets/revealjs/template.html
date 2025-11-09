@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slide Presentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .reveal {
+            width: 100%;
+            height: 100%;
+        }
+
+        .reveal .slides {
+            text-align: left;
+        }
+
+        .reveal .slides section {
+            padding: 20px;
+            height: 100%;
+        }
+
+        /* Text element styles */
+        .slide-text {
+            position: absolute;
+            word-wrap: break-word;
+            overflow: hidden;
+        }
+
+        .text-left { text-align: left; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        /* Image element styles */
+        .slide-image {
+            position: absolute;
+            object-fit: cover;
+        }
+
+        /* Shape element styles */
+        .slide-shape {
+            position: absolute;
+        }
+
+        .shape-rectangle {
+            border-radius: var(--corner-radius, 0);
+        }
+
+        .shape-oval {
+            border-radius: 50%;
+        }
+
+        .shape-triangle {
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+
+        .shape-line {
+            height: 2px;
+            background-color: currentColor;
+        }
+
+        /* Table element styles */
+        .slide-table {
+            position: absolute;
+            border-collapse: collapse;
+            width: auto;
+        }
+
+        .slide-table td, .slide-table th {
+            border: 1px solid;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .slide-table th {
+            font-weight: bold;
+        }
+
+        /* Chart element styles */
+        .slide-chart {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            height: 200px;
+            padding: 10px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            min-width: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .chart-bar-fill {
+            width: 100%;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .chart-bar-label {
+            margin-top: 8px;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .chart-legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        /* Icon element styles */
+        .slide-icon {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        /* Animation styles */
+        .reveal .slides section > * {
+            transition: all 0.3s ease;
+        }
+
+        /* Custom reveal.js theme override */
+        .reveal {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .reveal h1, .reveal h2, .reveal h3, .reveal h4, .reveal h5, .reveal h6 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        /* Disable default reveal.js animations for custom control */
+        .reveal .slides section.present {
+            opacity: 1;
+        }
+
+        .reveal .slides section.past,
+        .reveal .slides section.future {
+            opacity: 0;
+        }
+    </style>
+
+    <!-- Reveal.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.0/dist/reveal.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.0/dist/theme/white.min.css" id="theme">
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides" id="slides-container">
+            <!-- Slides will be injected here -->
+        </div>
+    </div>
+
+    <!-- Reveal.js JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.0/dist/reveal.min.js"></script>
+
+    <script>
+        // Initialize Reveal.js with custom configuration
+        Reveal.initialize({
+            width: 960,
+            height: 700,
+            margin: 0.04,
+            minScale: 0.2,
+            maxScale: 2.0,
+            controls: true,
+            controlsTutorial: true,
+            controlsLayout: 'bottom-right',
+            controlsBackArrows: 'faded',
+            progress: true,
+            center: false,
+            hash: false,
+            navigationMode: 'linear',
+            embedded: true,
+            touch: true,
+            loop: false,
+            rtl: false,
+            shuffle: false,
+            fragments: true,
+            fragmentInURL: false,
+            help: true,
+            pause: true,
+            showNotes: false,
+            autoSlide: 0,
+            autoSlideStoppable: true,
+            mouseWheel: false,
+            hideInactiveCursor: true,
+            hideCursorTime: 5000,
+            previewLinks: false,
+            transition: 'slide',
+            transitionSpeed: 'default',
+            backgroundTransition: 'fade',
+            viewDistance: 3,
+            mobileViewDistance: 2,
+            display: 'block',
+            pdfMaxPagesPerSlide: 1,
+            pdfSeparateFragments: true,
+            pdfPageHeightOffset: -1,
+            overview: true,
+            keyboard: true
+        });
+
+        // Expose slide navigation functions for Android WebView
+        window.navigateToSlide = function(index) {
+            Reveal.slide(index, 0);
+        };
+
+        window.nextSlide = function() {
+            Reveal.next();
+        };
+
+        window.previousSlide = function() {
+            Reveal.prev();
+        };
+
+        window.getCurrentSlideIndex = function() {
+            return Reveal.getIndices().h;
+        };
+
+        window.getTotalSlides = function() {
+            return Reveal.getTotalSlides();
+        };
+
+        // Notify Android when slide changes
+        Reveal.on('slidechanged', function(event) {
+            if (typeof Android !== 'undefined' && Android.onSlideChanged) {
+                Android.onSlideChanged(event.indexh);
+            }
+        });
+
+        // Notify Android when Reveal.js is ready
+        Reveal.on('ready', function() {
+            if (typeof Android !== 'undefined' && Android.onRevealReady) {
+                Android.onRevealReady();
+            }
+        });
+    </script>
+</body>
+</html>

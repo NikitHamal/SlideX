@@ -18,14 +18,15 @@ A modern Android application that creates beautiful presentations using Google G
 
 ### 🎯 **Smart Slide Creation**
 - AI-powered slide generation using Google Gemini
-- JSON-based slide structure for maximum flexibility
-- Advanced element customization (text, images, shapes, tables)
-- Real-time editing and preview
+- **Reveal.js-based presentation engine** for professional output
+- Advanced element customization (text, images, shapes, tables, charts, icons)
+- Real-time rendering with smooth transitions
 
 ### 📱 **Enhanced Functionality**
 - Slide stacks for organizing presentations
-- Multiple export formats (PNG, JPG, PDF)
-- Import/Export JSON slide definitions
+- **HTML export** for professional Reveal.js presentations
+- Export to PNG/JPG/PDF via browser (from HTML)
+- JSON-based data format for flexibility
 - Local data storage with SharedPreferences
 
 ## 🚀 Getting Started
@@ -86,10 +87,10 @@ app/src/main/java/com/slides/ai/
 ### Key Components
 
 - **MainActivity**: Grid view of slide stacks with empty states
-- **SlideActivity**: Canvas-based slide editor with Material 3 UI
+- **SlideActivity**: Reveal.js-based slide editor with Material 3 UI
 - **ApiKeyManager**: Encrypted storage and management of API keys
 - **ThemeManager**: System-aware theme switching
-- **SlideRenderer**: High-performance canvas rendering with touch handling
+- **RevealJsRenderer**: Professional HTML/CSS rendering with Reveal.js framework
 
 ## 🎨 Material 3 Implementation
 

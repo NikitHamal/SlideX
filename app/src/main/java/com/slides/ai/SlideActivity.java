@@ -203,10 +203,9 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 		// Wait for the slides fragment to be created
 		new Handler().postDelayed(() -> {
 			ensureFragmentReferences();
-			if (slidesFragment != null) {
-				slidesFragment.getSlideRenderer().setElementUpdateListener(this);
-				customizationManager = new CustomizationManager(this, slidesFragment.getSlideRenderer());
-				customizationManager.setImageSelectionCallback(this);
+			if (slidesFragment != null && slidesFragment.getRevealJsRenderer() != null) {
+				// RevealJsRenderer handles rendering internally, no need for element update listener
+				// Element customization can be added later if needed
 			}
 		}, 500); // Increased delay to ensure fragments are ready
 	}
@@ -214,8 +213,8 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	@Override
 	public void onElementUpdated() {
         ensureFragmentReferences();
-        if (slidesFragment != null && codeFragment != null) {
-            JSONObject slideData = slidesFragment.getSlideRenderer().getSlideData();
+        if (slidesFragment != null && codeFragment != null && slidesFragment.getRevealJsRenderer() != null) {
+            JSONObject slideData = slidesFragment.getRevealJsRenderer().getCurrentSlide();
             if (slideData != null) {
                 codeFragment.setCode(slideData.toString());
             }
@@ -287,9 +286,13 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
         ensureFragmentReferences();
         String selectedModel = chatFragment.getSelectedModel();
 
+        // Get canvas dimensions (default to 960x700 for reveal.js)
+        float width = 960;
+        float height = 700;
+
 		if (selectedModel.startsWith("gemini")) {
             if (networkManager != null) {
-                networkManager.sendPromptToGemini(prompt, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new NetworkManager.ApiResponseCallback() {
+                networkManager.sendPromptToGemini(prompt, width, height, new NetworkManager.ApiResponseCallback() {
                     @Override
                     public void onSuccess(String jsonStr) {
                         handleSuccessfulResponse(jsonStr);
@@ -309,7 +312,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
                     @Override
                     public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
                         if (response != null && response.success && response.data != null) {
-                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new QwenManager.QwenCallback<String>() {
+                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, width, height, new QwenManager.QwenCallback<String>() {
                                 @Override
                                 public void onSuccess(String jsonResponse) {
                                     try {
@@ -595,11 +598,11 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 		SwitchMaterial transparentSwitch = dialogView.findViewById(R.id.transparent_switch);
 
 		// Setup format spinner
-		String[] formats = new String[]{"PNG", "JPG", "PDF"};
+		String[] formats = new String[]{"HTML", "PNG", "JPG", "PDF"};
 		ArrayAdapter<String> formatAdapter = new ArrayAdapter<>(
 		this, android.R.layout.simple_dropdown_item_1line, formats);
 		formatSpinner.setAdapter(formatAdapter);
-		formatSpinner.setText(formats[0], false); // Default to PNG
+		formatSpinner.setText(formats[0], false); // Default to HTML
 
 		// Setup quality spinner (only for PNG/JPG)
 		String[] qualities = new String[]{"High (100%)", "Medium (80%)", "Low (50%)"};
@@ -630,7 +633,11 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 		.setPositiveButton("Export", (dialog, which) -> {
 			String format = formatSpinner.getText().toString();
 
-			if (format.equals("PDF")) {
+			if (format.equals("HTML")) {
+				// Export as HTML (reveal.js presentation)
+				pendingExportFormat = format;
+				checkStoragePermissionAndExport();
+			} else if (format.equals("PDF")) {
 				pendingExportFormat = format;
 				checkStoragePermissionAndExport();
 			} else {
@@ -712,59 +719,99 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 			return;
 		}
 
-		if (pendingExportFormat.equals("PDF")) {
+		if (pendingExportFormat.equals("HTML")) {
+			exportToHtml();
+		} else if (pendingExportFormat.equals("PDF")) {
 			exportToPdf();
 		} else {
 			exportToImage();
 		}
 	}
 
-	private void exportToImage() {
+	private void exportToHtml() {
 		executorService.execute(() -> {
 			try {
 				ensureFragmentReferences();
-				if (slidesFragment == null || slidesFragment.getSlideRenderer() == null) {
+				if (slidesFragment == null || slidesFragment.getRevealJsRenderer() == null) {
 					mainHandler.post(() -> Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show());
 					return;
 				}
 
-				// Create bitmap from slide
-				int width = (int)(SLIDE_WIDTH * pendingExportScale);
-				int height = (int)(SLIDE_HEIGHT * pendingExportScale);
-				
-				Bitmap bitmap = Bitmap.createBitmap(width, height, 
-					pendingExportTransparent ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
-				Canvas canvas = new Canvas(bitmap);
-
-				// Clear background
-				if (!pendingExportTransparent) {
-					canvas.drawColor(Color.WHITE);
+				// Generate HTML from reveal.js renderer
+				String htmlContent = slidesFragment.getRevealJsRenderer().exportToHtml();
+				if (htmlContent == null || htmlContent.isEmpty()) {
+					mainHandler.post(() -> Toast.makeText(this, "Failed to generate HTML", Toast.LENGTH_SHORT).show());
+					return;
 				}
 
-				// Scale canvas for higher resolution
-				canvas.scale(pendingExportScale, pendingExportScale);
-
-				// Draw slide content
-				slidesFragment.getSlideRenderer().draw(canvas);
-
-				// Save to storage
-				String fileName = "slide_" + System.currentTimeMillis() + 
-					(pendingExportFormat.equals("PNG") ? ".png" : ".jpg");
-				
-				boolean saved = saveBitmapToStorage(bitmap, fileName, pendingExportFormat, pendingExportQuality);
+				// Save HTML file
+				String fileName = "presentation_" + System.currentTimeMillis() + ".html";
+				boolean saved = saveTextToStorage(htmlContent, fileName, "text/html");
 
 				mainHandler.post(() -> {
 					if (saved) {
-						Toast.makeText(this, "Slide exported as " + fileName, Toast.LENGTH_LONG).show();
+						Toast.makeText(this, "Presentation exported as " + fileName, Toast.LENGTH_LONG).show();
 					} else {
-						Toast.makeText(this, "Failed to export slide", Toast.LENGTH_SHORT).show();
+						Toast.makeText(this, "Failed to export presentation", Toast.LENGTH_SHORT).show();
 					}
 				});
 
 			} catch (Exception e) {
-				Log.e("SlideActivity", "Export error: " + e.getMessage());
-				mainHandler.post(() -> Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+				Log.e("SlideActivity", "HTML export error: " + e.getMessage());
+				mainHandler.post(() -> Toast.makeText(this, "HTML export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
 			}
+		});
+	}
+
+	private boolean saveTextToStorage(String content, String fileName, String mimeType) {
+		try {
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+				// Use MediaStore for Android 10+
+				ContentResolver resolver = getContentResolver();
+				ContentValues contentValues = new ContentValues();
+				contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+				contentValues.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+				contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/AI Slides");
+
+				Uri fileUri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues);
+				if (fileUri != null) {
+					OutputStream outputStream = resolver.openOutputStream(fileUri);
+					if (outputStream != null) {
+						outputStream.write(content.getBytes("UTF-8"));
+						outputStream.close();
+						return true;
+					}
+				}
+			} else {
+				// Use external storage for Android 9 and below
+				File documentsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+				File aiSlidesDir = new File(documentsDir, "AI Slides");
+				if (!aiSlidesDir.exists()) {
+					aiSlidesDir.mkdirs();
+				}
+
+				File textFile = new File(aiSlidesDir, fileName);
+				FileOutputStream outputStream = new FileOutputStream(textFile);
+				outputStream.write(content.getBytes("UTF-8"));
+				outputStream.close();
+
+				// Notify media scanner
+				MediaScannerConnection.scanFile(this, new String[]{textFile.getAbsolutePath()}, null, null);
+				return true;
+			}
+		} catch (Exception e) {
+			Log.e("SlideActivity", "Save text error: " + e.getMessage());
+		}
+		return false;
+	}
+
+	private void exportToImage() {
+		// Image export is deprecated in reveal.js version
+		// Users should use HTML export or print-to-PDF from browser
+		mainHandler.post(() -> {
+			Toast.makeText(this,
+				"Image export is not available with Reveal.js renderer. Please use HTML export instead.",
+				Toast.LENGTH_LONG).show();
 		});
 	}
 
@@ -817,46 +864,12 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	}
 
 	private void exportToPdf() {
-		executorService.execute(() -> {
-			try {
-				ensureFragmentReferences();
-				if (slidesFragment == null || slidesFragment.getSlideRenderer() == null) {
-					mainHandler.post(() -> Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show());
-					return;
-				}
-
-				// Create PDF document
-				PdfDocument pdfDocument = new PdfDocument();
-				PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(
-					SLIDE_WIDTH * 2, SLIDE_HEIGHT * 2, 1).create(); // 2x scale for better quality
-				PdfDocument.Page page = pdfDocument.startPage(pageInfo);
-
-				Canvas canvas = page.getCanvas();
-				canvas.scale(2.0f, 2.0f); // Scale up for better quality
-
-				// Draw slide content
-				slidesFragment.getSlideRenderer().draw(canvas);
-
-				pdfDocument.finishPage(page);
-
-				// Save PDF
-				String fileName = "slide_" + System.currentTimeMillis() + ".pdf";
-				boolean saved = savePdfToStorage(pdfDocument, fileName);
-
-				pdfDocument.close();
-
-				mainHandler.post(() -> {
-					if (saved) {
-						Toast.makeText(this, "Slide exported as " + fileName, Toast.LENGTH_LONG).show();
-					} else {
-						Toast.makeText(this, "Failed to export PDF", Toast.LENGTH_SHORT).show();
-					}
-				});
-
-			} catch (Exception e) {
-				Log.e("SlideActivity", "PDF export error: " + e.getMessage());
-				mainHandler.post(() -> Toast.makeText(this, "PDF export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-			}
+		// PDF export is deprecated in reveal.js version
+		// Users should export HTML and use browser's print-to-PDF feature
+		mainHandler.post(() -> {
+			Toast.makeText(this,
+				"PDF export is not available with Reveal.js renderer. Please export as HTML and use your browser's Print to PDF feature.",
+				Toast.LENGTH_LONG).show();
 		});
 	}
 
