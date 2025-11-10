@@ -53,11 +53,7 @@ public class RevealJsGenerator {
                 "  <script>\n" +
                 "    Reveal.initialize({\n" +
                 "      embedded: true,\n" +
-                "      width: 320,\n" +
-                "      height: 200,\n" +
-                "      margin: 0,\n" +
-                "      minScale: 1,\n" +
-                "      maxScale: 1\n" +
+                "      margin: 0\n" +
                 "    });\n" +
                 "  </script>\n" +
                 "</body>\n" +

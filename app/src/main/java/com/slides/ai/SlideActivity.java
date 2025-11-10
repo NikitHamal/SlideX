@@ -466,7 +466,7 @@ public class SlideActivity extends AppCompatActivity implements
 		SwitchMaterial transparentSwitch = dialogView.findViewById(R.id.transparent_switch);
 
 		// Setup format spinner
-		String[] formats = new String[]{"PNG", "JPG"};
+		String[] formats = new String[]{"PNG", "JPG", "PDF"};
 		ArrayAdapter<String> formatAdapter = new ArrayAdapter<>(
 		this, android.R.layout.simple_dropdown_item_1line, formats);
 		formatSpinner.setAdapter(formatAdapter);
@@ -492,7 +492,11 @@ public class SlideActivity extends AppCompatActivity implements
 		// Handle format changes
 		formatSpinner.setOnItemClickListener((parent, view, position, id) -> {
 			String selectedFormat = formats[position];
+			boolean isPdf = selectedFormat.equals("PDF");
+			qualitySpinner.setEnabled(!isPdf);
+			sizeSpinner.setEnabled(!isPdf);
 			transparentSwitch.setVisibility(selectedFormat.equals("PNG") ? View.VISIBLE : View.GONE);
+			transparentSwitch.setEnabled(!isPdf);
 		});
 
 		builder.setTitle("Export Slide")
@@ -577,7 +581,34 @@ public class SlideActivity extends AppCompatActivity implements
 			return;
 		}
 
-		exportToImage();
+		if (pendingExportFormat.equals("PDF")) {
+			exportToPdf();
+		} else {
+			exportToImage();
+		}
+	}
+
+	private void exportToPdf() {
+		ensureFragmentReferences();
+		if (slidesFragment == null) {
+			Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		View webView = slidesFragment.getView().findViewById(R.id.slide_webview);
+		if (webView == null) {
+			Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+			android.print.PrintManager printManager = (android.print.PrintManager) getSystemService(Context.PRINT_SERVICE);
+			android.print.PrintDocumentAdapter printAdapter = ((android.webkit.WebView) webView).createPrintDocumentAdapter("SlideExport");
+			String jobName = "SlideX Export";
+			printManager.print(jobName, printAdapter, new android.print.PrintAttributes.Builder().build());
+		} else {
+			Toast.makeText(this, "PDF export is not available on your Android version.", Toast.LENGTH_LONG).show();
+		}
 	}
 
 	private void exportToImage() {
