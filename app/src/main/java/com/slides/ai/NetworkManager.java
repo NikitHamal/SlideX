@@ -61,36 +61,18 @@ public class NetworkManager {
 				String result;
 				try {
 					// Construct the structured prompt with improved guidance for layout
-					String structuredPrompt = "Create a professional presentation slide based on this prompt: \"" + prompt + "\". " +
-					"The canvas size is " + canvasWidth + "x" + canvasHeight + " pixels. Please generate the slide elements accordingly." +
-					"You must respond with ONLY a valid JSON object (no markdown, no explanation) that contains:\n" +
-					"{\n" +
-					"  \"backgroundColor\": \"#FFFFFF\",\n" +
-					"  \"elements\": [\n" +
-					"    {\n" +
-					"      \"type\": \"text\",\n" +
-					"      \"content\": \"Slide Title\",\n" +
-					"      \"x\": 20,\n" +
-					"      \"y\": 20,\n" +
-					"      \"width\": 280,\n" +
-					"      \"height\": 40,\n" +
-					"      \"fontSize\": 24,\n" +
-					"      \"color\": \"#000000\",\n" +
-					"      \"bold\": true,\n" +
-					"      \"alignment\": \"center\"\n" +
-					"    }\n" +
-					"  ]\n" +
-					"}\n" +
-					"Guidelines:\n" +
-					"- Use slide dimensions " + canvasWidth + "x" + canvasHeight + "dp\n" +
-					"- Position elements with proper spacing\n" +
-					"- Include title, content, and optionally images/shapes\n" +
-					"- Use readable fonts (fontSize 12-24)\n" +
-					"- Choose professional colors\n" +
-					"- For images, use real public URLs\n" +
-					"- For shapes: type can be 'rectangle', 'oval', 'line'\n" +
-					"- Ensure no element overlap\n" +
-					"IMPORTANT: Return ONLY the JSON object, nothing else.";
+					String structuredPrompt = "Create a professional presentation slide based on this request: \"" + prompt + "\". " +
+							"You must respond with ONLY a valid HTML `<section>` element for a reveal.js presentation (no markdown, no explanation). Example:\n" +
+							"<section>\n" +
+							"  <h2>Slide Title</h2>\n" +
+							"  <p>Slide content</p>\n" +
+							"</section>\n" +
+							"Guidelines:\n" +
+							"- Use simple, semantic HTML tags like `<h2>`, `<p>`, `<ul>`, `<li>`, `<img>`.\n" +
+							"- Do NOT use `<div>` tags or inline `style` attributes.\n" +
+							"- For images, use real public URLs.\n" +
+							"- You can use reveal.js fragments to animate elements, for example: `<p class=\"fragment\">This will fade in</p>`.\n" +
+							"IMPORTANT: Return ONLY the HTML `<section>` element, nothing else.";
 					
 					// Create JSON request body
 					JSONObject requestBody = new JSONObject();
@@ -186,9 +168,7 @@ public class NetworkManager {
                                     JSONObject firstPart = parts.getJSONObject(0);
                                     String text = firstPart.getString("text");
 
-                                    // Extract JSON from the response text
-                                    String jsonStr = extractJsonFromResponse(text);
-                                    callback.onSuccess(jsonStr);
+                                    callback.onSuccess(text);
                                 } else {
                                     callback.onError("Empty parts in response");
                                 }
@@ -208,73 +188,6 @@ public class NetworkManager {
 		});
 		
 		networkThread.start();
-	}
-	
-	private String extractJsonFromResponse(String response) {
-		// First try to find JSON wrapped in markdown code blocks
-		if (response.contains("```json")) {
-			int startIdx = response.indexOf("```json") + 7;
-			int endIdx = response.lastIndexOf("```");
-			if (endIdx > startIdx) {
-				String jsonStr = response.substring(startIdx, endIdx).trim();
-				if (isValidJson(jsonStr)) {
-					return jsonStr;
-				}
-			}
-		}
-
-		// Try to find JSON wrapped in any code blocks
-		if (response.contains("```")) {
-			int startIdx = response.indexOf("```");
-			int secondStart = response.indexOf('\n', startIdx);
-			if (secondStart > startIdx) {
-				int endIdx = response.lastIndexOf("```");
-				if (endIdx > secondStart) {
-					String jsonStr = response.substring(secondStart + 1, endIdx).trim();
-					if (isValidJson(jsonStr)) {
-						return jsonStr;
-					}
-				}
-			}
-		}
-
-		// Find the first complete JSON object
-		int startIdx = response.indexOf('{');
-		if (startIdx != -1) {
-			int braceCount = 0;
-			int endIdx = startIdx;
-			
-			for (int i = startIdx; i < response.length(); i++) {
-				char c = response.charAt(i);
-				if (c == '{') {
-					braceCount++;
-				} else if (c == '}') {
-					braceCount--;
-					if (braceCount == 0) {
-						endIdx = i;
-						break;
-					}
-				}
-			}
-			
-			if (braceCount == 0 && endIdx > startIdx) {
-				String jsonStr = response.substring(startIdx, endIdx + 1);
-				if (isValidJson(jsonStr)) {
-					return jsonStr;
-				}
-			}
-		}
-
-		throw new IllegalArgumentException("No valid JSON found in response: " + response);
-	}
-
-	private boolean isValidJson(String jsonStr) {
-		try {
-			new JSONObject(jsonStr);
-			return true;
-		} catch (JSONException e) {
-			return false;
-		}
 	}
 	
 	public void loadImage(String url, final ImageLoadCallback callback) {

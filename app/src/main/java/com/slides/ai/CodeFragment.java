@@ -26,11 +26,11 @@ public class CodeFragment extends Fragment {
     private MaterialButton addSlideButton;
     private CodeInteractionListener listener;
     
-    private List<String> slideJsonList = new ArrayList<>();
+    private List<String> slideHtmlList = new ArrayList<>();
     private int currentSlideIndex = 0;
 
     public interface CodeInteractionListener {
-        void onCodeSaved(String json, int slideIndex);
+        void onCodeSaved(String html, int slideIndex);
         void onSlideChanged(int slideIndex);
     }
 
@@ -97,7 +97,7 @@ public class CodeFragment extends Fragment {
         saveCurrentSlideContent();
         
         // Add new slide
-        int newIndex = slideJsonList.size();
+        int newIndex = slideHtmlList.size();
         addSlideToList();
         addTabForSlide(newIndex);
         
@@ -113,12 +113,12 @@ public class CodeFragment extends Fragment {
         addNewSlide();
     }
 
-    public void addSlideFromJson(String jsonCode) {
-        // Add a slide with specific JSON content
+    public void addSlideFromHtml(String htmlCode) {
+        // Add a slide with specific HTML content
         saveCurrentSlideContent();
         
-        int newIndex = slideJsonList.size();
-        slideJsonList.add(jsonCode);
+        int newIndex = slideHtmlList.size();
+        slideHtmlList.add(htmlCode);
         addTabForSlide(newIndex);
         
         // Switch to new slide
@@ -132,8 +132,8 @@ public class CodeFragment extends Fragment {
     }
 
     private void addSlideToList() {
-        String defaultJson = generateDefaultSlideJson();
-        slideJsonList.add(defaultJson);
+        String defaultHtml = generateDefaultSlideHtml();
+        slideHtmlList.add(defaultHtml);
     }
 
     private void addTabForSlide(int index) {
@@ -144,8 +144,8 @@ public class CodeFragment extends Fragment {
 
     private void saveCurrentSlide() {
         saveCurrentSlideContent();
-        if (listener != null && currentSlideIndex < slideJsonList.size()) {
-            String code = slideJsonList.get(currentSlideIndex);
+        if (listener != null && currentSlideIndex < slideHtmlList.size()) {
+            String code = slideHtmlList.get(currentSlideIndex);
             if (!code.trim().isEmpty()) {
                 listener.onCodeSaved(code, currentSlideIndex);
             }
@@ -153,27 +153,27 @@ public class CodeFragment extends Fragment {
     }
 
     private void saveCurrentSlideContent() {
-        if (currentSlideIndex < slideJsonList.size() && codeInput != null) {
+        if (currentSlideIndex < slideHtmlList.size() && codeInput != null) {
             String content = codeInput.getText().toString().trim();
             if (!content.isEmpty()) {
-                slideJsonList.set(currentSlideIndex, content);
+                slideHtmlList.set(currentSlideIndex, content);
             }
         }
     }
 
     private void loadSlideContent(int index) {
-        if (index < slideJsonList.size() && codeInput != null) {
-            codeInput.setText(slideJsonList.get(index));
+        if (index < slideHtmlList.size() && codeInput != null) {
+            codeInput.setText(slideHtmlList.get(index));
         }
     }
 
-    public void setCode(String json) {
+    public void setCode(String html) {
         if (codeInput != null) {
-            codeInput.setText(json);
+            codeInput.setText(html);
         }
         // Update current slide in list
-        if (currentSlideIndex < slideJsonList.size()) {
-            slideJsonList.set(currentSlideIndex, json);
+        if (currentSlideIndex < slideHtmlList.size()) {
+            slideHtmlList.set(currentSlideIndex, html);
         }
     }
 
@@ -184,7 +184,7 @@ public class CodeFragment extends Fragment {
 
     public List<String> getAllSlides() {
         saveCurrentSlideContent();
-        return new ArrayList<>(slideJsonList);
+        return new ArrayList<>(slideHtmlList);
     }
 
     public int getCurrentSlideIndex() {
@@ -192,21 +192,21 @@ public class CodeFragment extends Fragment {
     }
 
     public int getSlideCount() {
-        return slideJsonList.size();
+        return slideHtmlList.size();
     }
 
     public boolean isCurrentSlideDefault() {
         if (currentSlideIndex == 0 && getSlideCount() == 1) {
             String currentCode = getCode().trim();
-            String defaultCode = generateDefaultSlideJson().trim();
+            String defaultCode = generateDefaultSlideHtml().trim();
             // We need to compare the content without the slide number, as it can change
-            return currentCode.contains("\"text\": \"Edit this slide content\"");
+            return currentCode.contains("<h2>Slide 1</h2>");
         }
         return false;
     }
 
     public void navigateToSlide(int index) {
-        if (index >= 0 && index < slideJsonList.size()) {
+        if (index >= 0 && index < slideHtmlList.size()) {
             TabLayout.Tab tab = slidesTabLayout.getTabAt(index);
             if (tab != null) {
                 tab.select();
@@ -214,32 +214,10 @@ public class CodeFragment extends Fragment {
         }
     }
 
-    private String generateDefaultSlideJson() {
-        return "{\n" +
-            "  \"backgroundColor\": \"#FFFFFF\",\n" +
-            "  \"elements\": [\n" +
-            "    {\n" +
-            "      \"type\": \"text\",\n" +
-            "      \"x\": 50,\n" +
-            "      \"y\": 50,\n" +
-            "      \"width\": 220,\n" +
-            "      \"height\": 40,\n" +
-            "      \"text\": \"Slide " + (slideJsonList.size() + 1) + "\",\n" +
-            "      \"fontSize\": 24,\n" +
-            "      \"color\": \"#333333\",\n" +
-            "      \"fontWeight\": \"bold\"\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"type\": \"text\",\n" +
-            "      \"x\": 50,\n" +
-            "      \"y\": 100,\n" +
-            "      \"width\": 220,\n" +
-            "      \"height\": 60,\n" +
-            "      \"text\": \"Edit this slide content\",\n" +
-            "      \"fontSize\": 16,\n" +
-            "      \"color\": \"#666666\"\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}";
+    private String generateDefaultSlideHtml() {
+        return "<section>\n" +
+            "  <h2>Slide " + (slideHtmlList.size() + 1) + "</h2>\n" +
+            "  <p>Edit this slide content</p>\n" +
+            "</section>";
     }
 }

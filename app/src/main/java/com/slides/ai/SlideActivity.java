@@ -65,9 +65,9 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.slides.ai.qwen.QwenManager;
 
-public class SlideActivity extends AppCompatActivity implements SlideRenderer.ElementSelectionListener,
-CustomizationManager.ImageSelectionCallback, CodeFragment.CodeInteractionListener,
-SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, SlideRenderer.ElementUpdateListener {
+public class SlideActivity extends AppCompatActivity implements
+        CodeFragment.CodeInteractionListener,
+        SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener {
 
 	private ViewPager2 viewPager;
 	private TabLayout tabLayout;
@@ -79,22 +79,9 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	private Handler mainHandler;
 	private ExecutorService executorService;
 
-	private String pendingExportFormat;
-	private int pendingExportQuality;
-	private float pendingExportScale;
-	private boolean pendingExportTransparent;
-
-	private SlideRenderer slideRenderer;
 	private NetworkManager networkManager;
 	private QwenManager qwenManager;
-	private CustomizationManager customizationManager;
 	private ApiKeyManager apiKeyManager;
-
-	private static final int SLIDE_WIDTH = 320;
-	private static final int SLIDE_HEIGHT = 200;
-	private static final int PICK_IMAGE_REQUEST = 1;
-	private static final int WRITE_EXTERNAL_STORAGE_PERMISSION = 2;
-	private SlideElement selectedElement;
 	
 	// Stack information for saving
 	private String stackId;
@@ -104,6 +91,12 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	private SlidesFragment slidesFragment;
 	private CodeFragment codeFragment;
 	private ChatFragment chatFragment;
+
+	// Export parameters
+    private String pendingExportFormat;
+    private int pendingExportQuality;
+    private float pendingExportScale;
+    private boolean pendingExportTransparent;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -124,9 +117,6 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 		apiKeyManager = new ApiKeyManager(this);
 		networkManager = new NetworkManager(apiKeyManager, imageCache, mainHandler, executorService);
 		qwenManager = new QwenManager(apiKeyManager, mainHandler, executorService);
-
-		// Initialize slide renderer once we have the slides fragment
-		setupSlideRenderer();
 	}
 
 	private void initViews() {
@@ -199,65 +189,23 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 		}
 	}
 
-	private void setupSlideRenderer() {
-		// Wait for the slides fragment to be created
-		new Handler().postDelayed(() -> {
-			ensureFragmentReferences();
-			if (slidesFragment != null) {
-				slidesFragment.getSlideRenderer().setElementUpdateListener(this);
-				customizationManager = new CustomizationManager(this, slidesFragment.getSlideRenderer());
-				customizationManager.setImageSelectionCallback(this);
-			}
-		}, 500); // Increased delay to ensure fragments are ready
-	}
-
 	@Override
-	public void onElementUpdated() {
-        ensureFragmentReferences();
-        if (slidesFragment != null && codeFragment != null) {
-            JSONObject slideData = slidesFragment.getSlideRenderer().getSlideData();
-            if (slideData != null) {
-                codeFragment.setCode(slideData.toString());
-            }
-        }
-	}
-
-	@Override
-	public void onCodeSaved(String jsonCode, int slideIndex) {
-		try {
-			JSONObject slideData = new JSONObject(jsonCode);
-			
-			// Update the slides fragment with new data
-			ensureFragmentReferences(); // Make sure we have fragment references
-			if (slidesFragment != null && codeFragment != null) {
-				// Get all slides from code fragment and update slides fragment
-				List<String> allSlides = codeFragment.getAllSlides();
-				List<JSONObject> slideObjects = new ArrayList<>();
-				for (String slide : allSlides) {
-					try {
-						slideObjects.add(new JSONObject(slide));
-					} catch (JSONException e) {
-						Log.e("SlideActivity", "Invalid JSON for slide: " + e.getMessage());
-						// Skip invalid slides but continue processing
-					}
-				}
-				if (!slideObjects.isEmpty()) {
-					slidesFragment.setSlides(slideObjects);
-					slidesFragment.navigateToSlide(slideIndex);
-				}
-			}
-			
-			// Save the slide stack if it's temporary
-			saveSlideStackIfTemporary();
-			
-			// Switch to slides tab to show the rendered slide
-			viewPager.setCurrentItem(0);
-			
-			Toast.makeText(this, "Slide " + (slideIndex + 1) + " updated successfully", Toast.LENGTH_SHORT).show();
-		} catch (JSONException e) {
-			Log.e("SlideActivity", "JSON parsing error: " + e.getMessage());
-			Toast.makeText(this, "Invalid JSON format: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+	public void onCodeSaved(String html, int slideIndex) {
+		ensureFragmentReferences();
+		if (slidesFragment != null && codeFragment != null) {
+			List<String> allSlides = codeFragment.getAllSlides();
+			RevealJsGenerator generator = new RevealJsGenerator(this);
+			String fullHtml = generator.generateHtml(allSlides);
+			slidesFragment.setSlideHtml(fullHtml);
 		}
+
+		// Save the slide stack if it's temporary
+		saveSlideStackIfTemporary();
+
+		// Switch to slides tab to show the rendered slide
+		viewPager.setCurrentItem(0);
+
+		Toast.makeText(this, "Slide " + (slideIndex + 1) + " updated successfully", Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
@@ -289,10 +237,16 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 
 		if (selectedModel.startsWith("gemini")) {
             if (networkManager != null) {
-                networkManager.sendPromptToGemini(prompt, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new NetworkManager.ApiResponseCallback() {
+                networkManager.sendPromptToGemini(prompt, 0, 0, new NetworkManager.ApiResponseCallback() {
                     @Override
-                    public void onSuccess(String jsonStr) {
-                        handleSuccessfulResponse(jsonStr);
+                    public void onSuccess(String htmlResponse) {
+                        try {
+                            String html = extractHtmlFromResponse(htmlResponse);
+                            handleSuccessfulResponse(html);
+                        } catch (Exception e) {
+                            Log.e("SlideActivity", "Error extracting HTML from Gemini response", e);
+                            handleErrorResponse("Error extracting HTML from Gemini response: " + e.getMessage() + "\n\n" + htmlResponse);
+                        }
                     }
 
                     @Override
@@ -309,15 +263,15 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
                     @Override
                     public void onSuccess(com.slides.ai.qwen.QwenNewChatResponse response) {
                         if (response != null && response.success && response.data != null) {
-                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, slidesFragment.getSlideRenderer().getCanvasWidth(), slidesFragment.getSlideRenderer().getCanvasHeight(), new QwenManager.QwenCallback<String>() {
+                            qwenManager.getCompletion(response.data.id, null, prompt, selectedModel, 0, 0, new QwenManager.QwenCallback<String>() {
                                 @Override
-                                public void onSuccess(String jsonResponse) {
+                                public void onSuccess(String htmlResponse) {
                                     try {
-                                        String jsonStr = extractJsonFromResponse(jsonResponse);
-                                        handleSuccessfulResponse(jsonStr);
+                                        String html = extractHtmlFromResponse(htmlResponse);
+                                        handleSuccessfulResponse(html);
                                     } catch (Exception e) {
-                                        Log.e("SlideActivity", "Error extracting JSON from Qwen response", e);
-                                        handleErrorResponse("Error extracting JSON from Qwen response: " + e.getMessage() + "\n\n" + jsonResponse);
+                                        Log.e("SlideActivity", "Error extracting HTML from Qwen response", e);
+                                        handleErrorResponse("Error extracting HTML from Qwen response: " + e.getMessage() + "\n\n" + htmlResponse);
                                     }
                                 }
 
@@ -346,52 +300,32 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
         }
 	}
 
-    private void handleSuccessfulResponse(String jsonStr) {
-        try {
-            // Parse the JSON and add it as a new slide
-            JSONObject slideData = new JSONObject(jsonStr);
-
-            // Add to code fragment
-            ensureFragmentReferences();
-            if (codeFragment != null) {
-                if (codeFragment.isCurrentSlideDefault()) {
-                    codeFragment.setCode(jsonStr);
-                    onCodeSaved(jsonStr, 0);
-                } else {
-                    codeFragment.addSlideFromJson(jsonStr);
-                }
-
-                // Update slides fragment
-                if (slidesFragment != null) {
-                    List<String> allSlides = codeFragment.getAllSlides();
-                    List<JSONObject> slideObjects = new ArrayList<>();
-                    for (String slide : allSlides) {
-                        try {
-                            slideObjects.add(new JSONObject(slide));
-                        } catch (JSONException e) {
-                            Log.e("SlideActivity", "Invalid JSON for slide: " + e.getMessage());
-                        }
-                    }
-                    if (!slideObjects.isEmpty()) {
-                        slidesFragment.setSlides(slideObjects);
-                        slidesFragment.navigateToSlide(slideObjects.size() - 1); // Navigate to new slide
-                    }
-                }
+    private void handleSuccessfulResponse(String html) {
+        ensureFragmentReferences();
+        if (codeFragment != null) {
+            if (codeFragment.isCurrentSlideDefault()) {
+                codeFragment.setCode(html);
+                onCodeSaved(html, 0);
+            } else {
+                codeFragment.addSlideFromHtml(html);
             }
 
-            // Switch to slides tab to show the result
-            viewPager.setCurrentItem(0);
-
-            // Add AI response to chat
-            if (chatFragment != null) {
-                chatFragment.addAiResponse("Great! I've created a slide based on your request. You can view it in the Slides tab and edit the JSON code in the Code tab if needed.");
+            // Update slides fragment
+            if (slidesFragment != null) {
+                List<String> allSlides = codeFragment.getAllSlides();
+                RevealJsGenerator generator = new RevealJsGenerator(this);
+                String fullHtml = generator.generateHtml(allSlides);
+                slidesFragment.setSlideHtml(fullHtml);
+                slidesFragment.navigateToSlide(allSlides.size() - 1); // Navigate to new slide
             }
+        }
 
-        } catch (JSONException e) {
-            Log.e("SlideActivity", "Error parsing generated JSON: " + e.getMessage());
-            if (chatFragment != null) {
-                chatFragment.addAiResponse("I generated a slide, but there was an error parsing the JSON. Please check the Code tab and fix any formatting issues.");
-            }
+        // Switch to slides tab to show the result
+        viewPager.setCurrentItem(0);
+
+        // Add AI response to chat
+        if (chatFragment != null) {
+            chatFragment.addAiResponse("Great! I've created a slide based on your request. You can view it in the Slides tab and edit the HTML code in the Code tab if needed.");
         }
     }
 
@@ -402,71 +336,26 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
         }
     }
 
-    private String extractJsonFromResponse(String response) {
-        // First try to find JSON wrapped in markdown code blocks
-        if (response.contains("```json")) {
-            int startIdx = response.indexOf("```json") + 7;
+    private String extractHtmlFromResponse(String response) {
+        // First try to find HTML wrapped in markdown code blocks
+        if (response.contains("```html")) {
+            int startIdx = response.indexOf("```html") + 7;
             int endIdx = response.lastIndexOf("```");
             if (endIdx > startIdx) {
-                String jsonStr = response.substring(startIdx, endIdx).trim();
-                if (isValidJson(jsonStr)) {
-                    return jsonStr;
-                }
+                return response.substring(startIdx, endIdx).trim();
             }
         }
 
-        // Try to find JSON wrapped in any code blocks
-        if (response.contains("```")) {
-            int startIdx = response.indexOf("```");
-            int secondStart = response.indexOf('\n', startIdx);
-            if (secondStart > startIdx) {
-                int endIdx = response.lastIndexOf("```");
-                if (endIdx > secondStart) {
-                    String jsonStr = response.substring(secondStart + 1, endIdx).trim();
-                    if (isValidJson(jsonStr)) {
-                        return jsonStr;
-                    }
-                }
-            }
-        }
-
-        // Find the first complete JSON object
-        int startIdx = response.indexOf('{');
+        // Try to find a <section> tag
+        int startIdx = response.indexOf("<section");
         if (startIdx != -1) {
-            int braceCount = 0;
-            int endIdx = startIdx;
-            
-            for (int i = startIdx; i < response.length(); i++) {
-                char c = response.charAt(i);
-                if (c == '{') {
-                    braceCount++;
-                } else if (c == '}') {
-                    braceCount--;
-                    if (braceCount == 0) {
-                        endIdx = i;
-                        break;
-                    }
-                }
-            }
-            
-            if (braceCount == 0 && endIdx > startIdx) {
-                String jsonStr = response.substring(startIdx, endIdx + 1);
-                if (isValidJson(jsonStr)) {
-                    return jsonStr;
-                }
+            int endIdx = response.lastIndexOf("</section>");
+            if (endIdx != -1) {
+                return response.substring(startIdx, endIdx + 10).trim();
             }
         }
 
-        throw new IllegalArgumentException("No valid JSON found in response: " + response);
-    }
-
-    private boolean isValidJson(String jsonStr) {
-        try {
-            new org.json.JSONObject(jsonStr);
-            return true;
-        } catch (org.json.JSONException e) {
-            return false;
-        }
+        throw new IllegalArgumentException("No valid HTML found in response: " + response);
     }
 
 	private void saveSlideStackIfTemporary() {
@@ -540,24 +429,6 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 		Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
 	}
 
-	@Override
-	public void onElementSelected(SlideElement element) {
-		selectedElement = element;
-		if (customizationManager != null) {
-			customizationManager.showElementCustomizationDialog(element);
-		}
-	}
-
-	@Override
-	public void onImageSelectionRequested(SlideElement element) {
-		selectedElement = element;
-
-		Intent intent = new Intent();
-		intent.setType("image/*");
-		intent.setAction(Intent.ACTION_GET_CONTENT);
-		startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
-	}
-
 	public HashMap<String, Bitmap> getImageCache() {
 		return imageCache;
 	}
@@ -621,8 +492,11 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 		// Handle format changes
 		formatSpinner.setOnItemClickListener((parent, view, position, id) -> {
 			String selectedFormat = formats[position];
+			boolean isPdf = selectedFormat.equals("PDF");
+			qualitySpinner.setEnabled(!isPdf);
+			sizeSpinner.setEnabled(!isPdf);
 			transparentSwitch.setVisibility(selectedFormat.equals("PNG") ? View.VISIBLE : View.GONE);
-			qualitySpinner.setEnabled(!selectedFormat.equals("PDF"));
+			transparentSwitch.setEnabled(!isPdf);
 		});
 
 		builder.setTitle("Export Slide")
@@ -630,38 +504,33 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 		.setPositiveButton("Export", (dialog, which) -> {
 			String format = formatSpinner.getText().toString();
 
-			if (format.equals("PDF")) {
-				pendingExportFormat = format;
-				checkStoragePermissionAndExport();
-			} else {
-				// Parse quality and size
-				String quality = qualitySpinner.getText().toString();
-				String size = sizeSpinner.getText().toString();
-				boolean transparent = transparentSwitch.isChecked() && format.equals("PNG");
+			// Parse quality and size
+			String quality = qualitySpinner.getText().toString();
+			String size = sizeSpinner.getText().toString();
+			boolean transparent = transparentSwitch.isChecked() && format.equals("PNG");
 
-				int qualityValue = 100;
-				if (quality.contains("80")) {
-					qualityValue = 80;
-				} else if (quality.contains("50")) {
-					qualityValue = 50;
-				}
-
-				float scale = 1.0f;
-				if (size.equals("2x")) {
-					scale = 2.0f;
-				} else if (size.equals("4x")) {
-					scale = 4.0f;
-				}
-
-				// Store the parameters for permission callback
-				pendingExportFormat = format;
-				pendingExportQuality = qualityValue;
-				pendingExportScale = scale;
-				pendingExportTransparent = transparent;
-
-				// Check for storage permission and export
-				checkStoragePermissionAndExport();
+			int qualityValue = 100;
+			if (quality.contains("80")) {
+				qualityValue = 80;
+			} else if (quality.contains("50")) {
+				qualityValue = 50;
 			}
+
+			float scale = 1.0f;
+			if (size.equals("2x")) {
+				scale = 2.0f;
+			} else if (size.equals("4x")) {
+				scale = 4.0f;
+			}
+
+			// Store the parameters for permission callback
+			pendingExportFormat = format;
+			pendingExportQuality = qualityValue;
+			pendingExportScale = scale;
+			pendingExportTransparent = transparent;
+
+			// Check for storage permission and export
+			checkStoragePermissionAndExport();
 		})
 		.setNegativeButton("Cancel", null);
 
@@ -683,11 +552,11 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 			performExport();
 		} else {
 			// Android 9 and below - need WRITE_EXTERNAL_STORAGE permission
-			if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) 
+			if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
 				!= PackageManager.PERMISSION_GRANTED) {
-				ActivityCompat.requestPermissions(this, 
-					new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 
-					WRITE_EXTERNAL_STORAGE_PERMISSION);
+				ActivityCompat.requestPermissions(this,
+					new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+					2);
 			} else {
 				performExport();
 			}
@@ -697,7 +566,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 	@Override
 	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-		if (requestCode == WRITE_EXTERNAL_STORAGE_PERMISSION) {
+		if (requestCode == 2) {
 			if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 				performExport();
 			} else {
@@ -719,47 +588,60 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 		}
 	}
 
+	private void exportToPdf() {
+		ensureFragmentReferences();
+		if (slidesFragment == null) {
+			Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		View webView = slidesFragment.getView().findViewById(R.id.slide_webview);
+		if (webView == null) {
+			Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+			android.print.PrintManager printManager = (android.print.PrintManager) getSystemService(Context.PRINT_SERVICE);
+			android.print.PrintDocumentAdapter printAdapter = ((android.webkit.WebView) webView).createPrintDocumentAdapter("SlideExport");
+			String jobName = "SlideX Export";
+			printManager.print(jobName, printAdapter, new android.print.PrintAttributes.Builder().build());
+		} else {
+			Toast.makeText(this, "PDF export is not available on your Android version.", Toast.LENGTH_LONG).show();
+		}
+	}
+
 	private void exportToImage() {
 		executorService.execute(() -> {
 			try {
 				ensureFragmentReferences();
-				if (slidesFragment == null || slidesFragment.getSlideRenderer() == null) {
+				if (slidesFragment == null) {
 					mainHandler.post(() -> Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show());
 					return;
 				}
 
-				// Create bitmap from slide
-				int width = (int)(SLIDE_WIDTH * pendingExportScale);
-				int height = (int)(SLIDE_HEIGHT * pendingExportScale);
-				
-				Bitmap bitmap = Bitmap.createBitmap(width, height, 
-					pendingExportTransparent ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
-				Canvas canvas = new Canvas(bitmap);
+                View webView = slidesFragment.getView().findViewById(R.id.slide_webview);
+                if (webView == null) {
+                    mainHandler.post(() -> Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show());
+                    return;
+                }
 
-				// Clear background
-				if (!pendingExportTransparent) {
-					canvas.drawColor(Color.WHITE);
-				}
+                mainHandler.post(() -> {
+                    Bitmap bitmap = Bitmap.createBitmap(webView.getWidth(), webView.getHeight(), Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(bitmap);
+                    webView.draw(canvas);
 
-				// Scale canvas for higher resolution
-				canvas.scale(pendingExportScale, pendingExportScale);
+                    String fileName = "slide_" + System.currentTimeMillis() +
+                        (pendingExportFormat.equals("PNG") ? ".png" : ".jpg");
 
-				// Draw slide content
-				slidesFragment.getSlideRenderer().draw(canvas);
+                    boolean saved = saveBitmapToStorage(bitmap, fileName, pendingExportFormat, pendingExportQuality);
 
-				// Save to storage
-				String fileName = "slide_" + System.currentTimeMillis() + 
-					(pendingExportFormat.equals("PNG") ? ".png" : ".jpg");
-				
-				boolean saved = saveBitmapToStorage(bitmap, fileName, pendingExportFormat, pendingExportQuality);
-
-				mainHandler.post(() -> {
-					if (saved) {
-						Toast.makeText(this, "Slide exported as " + fileName, Toast.LENGTH_LONG).show();
-					} else {
-						Toast.makeText(this, "Failed to export slide", Toast.LENGTH_SHORT).show();
-					}
-				});
+                    if (saved) {
+                        Toast.makeText(this, "Slide exported as " + fileName, Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, "Failed to export slide", Toast.LENGTH_SHORT).show();
+                    }
+                });
 
 			} catch (Exception e) {
 				Log.e("SlideActivity", "Export error: " + e.getMessage());
@@ -775,7 +657,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 				ContentResolver resolver = getContentResolver();
 				ContentValues contentValues = new ContentValues();
 				contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
-				contentValues.put(MediaStore.MediaColumns.MIME_TYPE, 
+				contentValues.put(MediaStore.MediaColumns.MIME_TYPE,
 					format.equals("PNG") ? "image/png" : "image/jpeg");
 				contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/AI Slides");
 
@@ -783,7 +665,7 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 				if (imageUri != null) {
 					OutputStream outputStream = resolver.openOutputStream(imageUri);
 					if (outputStream != null) {
-						Bitmap.CompressFormat compressFormat = format.equals("PNG") ? 
+						Bitmap.CompressFormat compressFormat = format.equals("PNG") ?
 							Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
 						bitmap.compress(compressFormat, quality, outputStream);
 						outputStream.close();
@@ -800,8 +682,8 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 
 				File imageFile = new File(aiSlidesDir, fileName);
 				FileOutputStream outputStream = new FileOutputStream(imageFile);
-				
-				Bitmap.CompressFormat compressFormat = format.equals("PNG") ? 
+
+				Bitmap.CompressFormat compressFormat = format.equals("PNG") ?
 					Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
 				bitmap.compress(compressFormat, quality, outputStream);
 				outputStream.close();
@@ -812,92 +694,6 @@ SlidesFragment.SlideNavigationListener, ChatFragment.ChatInteractionListener, Sl
 			}
 		} catch (Exception e) {
 			Log.e("SlideActivity", "Save error: " + e.getMessage());
-		}
-		return false;
-	}
-
-	private void exportToPdf() {
-		executorService.execute(() -> {
-			try {
-				ensureFragmentReferences();
-				if (slidesFragment == null || slidesFragment.getSlideRenderer() == null) {
-					mainHandler.post(() -> Toast.makeText(this, "No slide to export", Toast.LENGTH_SHORT).show());
-					return;
-				}
-
-				// Create PDF document
-				PdfDocument pdfDocument = new PdfDocument();
-				PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(
-					SLIDE_WIDTH * 2, SLIDE_HEIGHT * 2, 1).create(); // 2x scale for better quality
-				PdfDocument.Page page = pdfDocument.startPage(pageInfo);
-
-				Canvas canvas = page.getCanvas();
-				canvas.scale(2.0f, 2.0f); // Scale up for better quality
-
-				// Draw slide content
-				slidesFragment.getSlideRenderer().draw(canvas);
-
-				pdfDocument.finishPage(page);
-
-				// Save PDF
-				String fileName = "slide_" + System.currentTimeMillis() + ".pdf";
-				boolean saved = savePdfToStorage(pdfDocument, fileName);
-
-				pdfDocument.close();
-
-				mainHandler.post(() -> {
-					if (saved) {
-						Toast.makeText(this, "Slide exported as " + fileName, Toast.LENGTH_LONG).show();
-					} else {
-						Toast.makeText(this, "Failed to export PDF", Toast.LENGTH_SHORT).show();
-					}
-				});
-
-			} catch (Exception e) {
-				Log.e("SlideActivity", "PDF export error: " + e.getMessage());
-				mainHandler.post(() -> Toast.makeText(this, "PDF export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-			}
-		});
-	}
-
-	private boolean savePdfToStorage(PdfDocument pdfDocument, String fileName) {
-		try {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-				// Use MediaStore for Android 10+
-				ContentResolver resolver = getContentResolver();
-				ContentValues contentValues = new ContentValues();
-				contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
-				contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf");
-				contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/AI Slides");
-
-				Uri pdfUri = resolver.insert(MediaStore.Files.getContentUri("external"), contentValues);
-				if (pdfUri != null) {
-					OutputStream outputStream = resolver.openOutputStream(pdfUri);
-					if (outputStream != null) {
-						pdfDocument.writeTo(outputStream);
-						outputStream.close();
-						return true;
-					}
-				}
-			} else {
-				// Use external storage for Android 9 and below
-				File documentsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
-				File aiSlidesDir = new File(documentsDir, "AI Slides");
-				if (!aiSlidesDir.exists()) {
-					aiSlidesDir.mkdirs();
-				}
-
-				File pdfFile = new File(aiSlidesDir, fileName);
-				FileOutputStream outputStream = new FileOutputStream(pdfFile);
-				pdfDocument.writeTo(outputStream);
-				outputStream.close();
-
-				// Notify media scanner
-				MediaScannerConnection.scanFile(this, new String[]{pdfFile.getAbsolutePath()}, null, null);
-				return true;
-			}
-		} catch (Exception e) {
-			Log.e("SlideActivity", "PDF save error: " + e.getMessage());
 		}
 		return false;
 	}
